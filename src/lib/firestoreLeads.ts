@@ -1,5 +1,5 @@
 import { db } from '@/firebase/firestore';
-import { collection, addDoc, updateDoc, doc, query, orderBy, getDocs, where, arrayUnion, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDocs, where, arrayUnion, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore'; // Importar Timestamp do firebase/firestore para tipagem de data
 
 export interface Message {
@@ -76,6 +76,17 @@ export async function updateLead(leadId: string, updates: Partial<Lead>) {
     throw error;
   }
 }
+
+export const deleteLead = async (leadId: string) => {
+  try {
+    const leadRef = doc(db, 'leads', leadId);
+    await deleteDoc(leadRef);
+    console.log(`Lead com ID ${leadId} deletada com sucesso.`);
+  } catch (error) {
+    console.error(`Erro ao deletar lead com ID ${leadId}:`, error);
+    throw error; // Re-lançar o erro para que o componente possa tratá-lo
+  }
+};
 
 // Buscar um único lead por ID
 export async function getLeadById(leadId: string): Promise<Lead | null> {

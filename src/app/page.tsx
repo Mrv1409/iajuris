@@ -48,17 +48,17 @@ export default function Home() {//eslint-disable-next-line
     >
       {/* Imagem para Mobile - substitui a desktop */}
       <div 
-        className="absolute inset-0 md:hidden z-0"
+        className="absolute inset-0 md:hidden z-0 brightness-90"
         style={{
           backgroundImage: "url('/images/advogado-robo.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: 'contain',
+          backgroundPosition: 'top center',
           backgroundRepeat: 'no-repeat',
         }}
       />
 
       {/* Overlay escuro - aplicado para ambas as imagens */}
-      <div className="absolute inset-0 bg-black/70 z-10" />
+      <div className="absolute inset-0 bg-black/50 z-10" />
 
       {/* Efeitos visuais de partículas - aplicados para ambas as imagens */}
       <div className="absolute inset-0 overflow-hidden z-20">

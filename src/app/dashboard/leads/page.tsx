@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getAllLeads, Lead } from '@/lib/firestoreLeads';
+import { getAllLeads, deleteLead, Lead } from '@/lib/firestoreLeads';
+import { Trash2 } from 'lucide-react';
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -53,6 +54,27 @@ export default function LeadsPage() {
       return 'Data inválida';
     }
   };
+
+const handleDeleteLead = async (e: React.MouseEvent, leadId: string) => {
+  e.stopPropagation(); 
+  e.preventDefault(); 
+
+  const confirmDelete = window.confirm(`Tem certeza de que deseja deletar o lead ${leadId}? Esta ação é irreversível.`);
+  if (confirmDelete) {
+    setLoading(true); 
+    try {
+      await deleteLead(leadId); 
+      console.log(`Lead com ID ${leadId} deletada com sucesso.`);
+      await fetchLeads(); 
+    } catch (error) {
+      console.error('Erro ao deletar lead:', error);
+
+      alert('Erro ao deletar lead. Por favor, tente novamente.'); 
+    } finally {
+      setLoading(false); 
+    }
+  }
+};
 
   const getStatusBadge = (status: Lead['statusAtendimento']) => {
     const statusConfig = {
@@ -408,6 +430,17 @@ export default function LeadsPage() {
 
                     {/* Separador dourado */}
                     <div className="h-0.5 w-24 mx-auto mb-4 bg-gradient-to-r from-transparent via-amber-600 to-transparent"></div>
+
+                    {/* NOVO: Botão de Lixeira no canto inferior direito */}
+                    <div className="flex justify-end mb-4"> {/* Alinha à direita, adiciona margem inferior */}
+                        <button
+                            onClick={(e) => handleDeleteLead(e, lead.id!)} // Passa o evento e o ID da lead
+                            className="p-2 rounded-full bg-red-600/20 hover:bg-red-600/40 transition-colors duration-200"
+                            title="Excluir Lead"
+                        >
+                            <Trash2 className="w-5 h-5 text-red-400" />
+                        </button>
+                    </div>
 
                     {/* Footer */}
                     <div className="flex items-center justify-between pt-4">
