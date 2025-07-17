@@ -1,7 +1,7 @@
-// src/app/chat/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link'; // Importar Link do Next.js
 import { createLead, addMensagemHistorico, updateLead, Message, Lead } from '@/lib/firestoreLeads';
 
 export default function ChatPage() {
@@ -124,11 +124,11 @@ export default function ChatPage() {
       userActionMessage = 'Gostaria de agendar uma visita.';
       aiResponseMessage = 'Ótimo! Para agendarmos, qual a data e o período (manhã/tarde/noite) de sua preferência? Por exemplo: "Amanhã à tarde" ou "Dia 20/07 de manhã".';
       setSolicitacaoAgendamento(true);
-      leadUpdates = { tipoSolicitacaoCliente: 'agendamento', statusAtendimento: 'contatado' }; // Mantido 'contatado' como no seu código original
+      leadUpdates = { tipoSolicitacaoCliente: 'agendamento', statusAtendimento: 'contatado' };
     } else { // 'contato_advogado'
       userActionMessage = 'Prefiro falar com um advogado.';
       aiResponseMessage = 'Entendido! Encaminhei seus dados para nossa equipe jurídica. Em breve um de nossos advogados entrará em contato com você via telefone ou WhatsApp para prosseguir com seu atendimento. Agradecemos seu interesse!';
-      leadUpdates = { tipoSolicitacaoCliente: 'contato_advogado', statusAtendimento: 'contatado' }; // Mantido 'contatado' como no seu código original
+      leadUpdates = { tipoSolicitacaoCliente: 'contato_advogado', statusAtendimento: 'contatado' };
     }
 
     const userMsg: Message = { tipo: 'user', mensagem: userActionMessage, timestamp: new Date().toISOString() };
@@ -163,7 +163,7 @@ export default function ChatPage() {
     await updateLead(leadId, {
       preferenciaAgendamentoCliente: dataHoraPreferencial,
       tipoSolicitacaoCliente: 'agendamento',
-      statusAtendimento: 'contatado' // Mantido 'contatado' como no seu código original
+      statusAtendimento: 'contatado'
     });
 
     setCarregando(false);
@@ -179,15 +179,31 @@ export default function ChatPage() {
       <div className="absolute top-20 left-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
       <div className="absolute bottom-20 right-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000" />
 
-      {/* Header com logo IAJURIS - Aplicando Header Pattern e Container Principal */}
+      {/* Header com logo IAJURIS e Botão Voltar para Dashboard */}
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 border-b border-[#6e6d6b] border-opacity-20 backdrop-blur-sm"
            style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between"> {/* Adicionado flex e justify-between */}
+          {/* Botão Voltar para Dashboard */}
+          <Link 
+            href="/dashboard" // Caminho para a Dashboard
+            className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
+            style={{ 
+              background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)', // Gradiente Dourado
+              borderColor: 'rgba(176, 130, 90, 0.2)', // Borda dourada sutil
+              boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' // Sombra dourada
+            }}
+          >
+            <span className="text-white font-medium text-sm sm:text-base">
+              Voltar
+            </span>
+          </Link>
+
+          {/* Título Centralizado IAJURIS */}
+          <div className="flex-grow text-center"> {/* flex-grow para ocupar espaço e text-center para centralizar */}
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-3xl text-[#b0825a]" style={{ opacity: 0.7, fontSize: '2.5rem' }}>⚖️</span> {/* Ícone temático */}
-                <h1 className="text-4xl md:text-5xl font-bold text-[#b0825a] text-shadow-lg"> {/* Título dourado com text-shadow */}
+                <span className="text-3xl text-[#b0825a]" style={{ opacity: 0.7, fontSize: '2.5rem' }}>⚖️</span>
+                <h1 className="text-4xl md:text-5xl font-bold text-[#b0825a] text-shadow-lg">
                   IAJURIS
                 </h1>
               </div>
@@ -197,7 +213,7 @@ export default function ChatPage() {
             <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4">
               Inteligência Artificial Jurídica
             </h2>
-            <p className="text-lg text-[#d4d4d4] opacity-80 font-light max-w-3xl mx-auto leading-relaxed"> {/* Subtítulo */}
+            <p className="text-lg text-[#d4d4d4] opacity-80 font-light max-w-3xl mx-auto leading-relaxed">
               Converse com nossa IA especializada e receba orientações jurídicas personalizadas
             </p>
           </div>

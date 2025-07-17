@@ -24,10 +24,12 @@ export default function DashboardPage() {
     fetchLeadCount();
   }, []);
 
+  // Alterado para redirecionar para a página principal
   const handleLogout = () => {
-    // Implementar logout logic aqui
-    console.log('Logout realizado');
-    // Exemplo: router.push('/login');
+    // Implementar logout logic aqui (se houver, como limpar sessão/token)
+    console.log('Logout realizado, redirecionando para a página principal.');
+    // Redireciona para a página principal
+    window.location.href = '/'; // Usando window.location.href para redirecionamento completo
   };
 
   return (
@@ -46,20 +48,36 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto">
             {/* Header Row */}
             <div className="flex items-center justify-between mb-8">
-              {/* Logo Section */}
-              <div className="flex items-center">
-                <div className="flex items-center group cursor-pointer">
-                  <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3 group-hover:rotate-12 transition-transform duration-300" 
+              {/* 1. Botão "IAJuris" para o Chat (no lugar antigo da logo) */}
+              <Link 
+                href="/chat" 
+                className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
+                style={{ 
+                  background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)', // Gradiente Dourado
+                  borderColor: 'rgba(176, 130, 90, 0.2)', // Borda dourada sutil
+                  boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' // Sombra dourada
+                }}
+              >
+                <span className="text-white font-medium text-sm sm:text-base">
+                  IAJuris
+                </span>
+              </Link>
+
+              {/* 1. Logo Centralizada */}
+              {/* Flexbox para centralizar a logo */}
+              <div className="flex-grow flex justify-center"> 
+                <div className="flex items-center group cursor-default"> {/* Cursor default para não parecer clicável */}
+                  <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
                          style={{ color: '#b0825a' }} />
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg group-hover:drop-shadow-2xl transition-all duration-300">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
                     IAJURIS
                   </h1>
-                  <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3 group-hover:-rotate-12 transition-transform duration-300" 
+                  <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
                          style={{ color: '#b0825a' }} />
                 </div>
               </div>
 
-              {/* Logout Button */}
+              {/* 2. Logout Button (com caminho para a tela de apresentação) */}
               <button
                 onClick={handleLogout}
                 className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
@@ -76,7 +94,7 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Título e Subtítulo */}
+            {/* Título e Subtítulo (mantido como está, mas a logo acima está centralizada) */}
             <div className="text-center">
               {/* Separador Dourado */}
               <div className="h-0.5 w-24 mx-auto mb-4" 
@@ -147,7 +165,7 @@ export default function DashboardPage() {
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
-                     style={{ color: '#d4d4d4' }}>
+                      style={{ color: '#d4d4d4' }}>
                     Novos clientes interessados em seus serviços jurídicos via chat inteligente.
                   </p>
                   
@@ -195,7 +213,7 @@ export default function DashboardPage() {
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
-                     style={{ color: '#d4d4d4' }}>
+                      style={{ color: '#d4d4d4' }}>
                     Gerencie e monitore todos os prazos processuais dos seus casos em andamento.
                   </p>
                   

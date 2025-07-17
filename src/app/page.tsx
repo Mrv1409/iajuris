@@ -46,10 +46,7 @@ export default function Home() {//eslint-disable-next-line
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Overlay escuro */}
-      <div className="absolute inset-0 bg-black/70 z-0" />
-
-      {/* Imagem para Mobile */}
+      {/* Imagem para Mobile - substitui a desktop */}
       <div 
         className="absolute inset-0 md:hidden z-0"
         style={{
@@ -60,8 +57,11 @@ export default function Home() {//eslint-disable-next-line
         }}
       />
 
-      {/* Efeitos visuais de partículas */}
-      <div className="absolute inset-0 overflow-hidden z-10">
+      {/* Overlay escuro - aplicado para ambas as imagens */}
+      <div className="absolute inset-0 bg-black/70 z-10" />
+
+      {/* Efeitos visuais de partículas - aplicados para ambas as imagens */}
+      <div className="absolute inset-0 overflow-hidden z-20">
         <div
           className="absolute top-10 sm:top-20 left-10 sm:left-20 w-16 sm:w-24 lg:w-32 h-16 sm:h-24 lg:h-32 border border-current rounded-full animate-pulse opacity-10"
           style={{ color: '#b0825a' }}
@@ -92,7 +92,7 @@ export default function Home() {//eslint-disable-next-line
       </div>
 
       {/* Conteúdo principal */}
-      <div className="relative z-20 max-w-6xl mx-auto transition-all duration-1000 text-white">
+      <div className="relative z-30 max-w-6xl mx-auto transition-all duration-1000 text-white">
         {/* Título */}
         <div className="mb-8 sm:mb-12">
           <h1
