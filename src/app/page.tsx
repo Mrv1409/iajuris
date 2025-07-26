@@ -51,7 +51,7 @@ export default function Home() {//eslint-disable-next-line
         className="absolute inset-0 md:hidden z-0 brightness-90"
         style={{
           backgroundImage: "url('/images/advogado-robo.png')",
-          backgroundSize: 'contain',
+          backgroundSize: 'cover',
           backgroundPosition: 'top center',
           backgroundRepeat: 'no-repeat',
         }}
