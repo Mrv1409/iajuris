@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';//eslint-disable-next-line
-import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 
 export default function DashboardPage() {
   const [leadCount, setLeadCount] = useState(0);
@@ -137,8 +137,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          {/* Cards Grid - Agora com 3 cards em grid responsivo */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
             {/* Card Leads */}
             <Link href="/dashboard/leads" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
@@ -245,39 +245,65 @@ export default function DashboardPage() {
                 </div>
               </div>
             </Link>
-          </div>
 
-          {/* Status Indicators */}
-          <div className="mt-8 sm:mt-12">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-              <div className="p-4 rounded-xl backdrop-blur-sm border"
+            {/* Card Petições - NOVO */}
+            <Link href="/dashboard/peticoes" className="group block">
+              <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
                      backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
-                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>24/7</div>
-                <div className="text-sm" style={{ color: '#d4d4d4' }}>Disponibilidade</div>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sempre ativo</div>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 rounded-xl mr-4 transition-all duration-300 group-hover:scale-110"
+                           style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
+                        <FileText className="w-6 h-6" style={{ color: '#b0825a' }} />
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white transition-colors duration-300">
+                        Petições
+                      </h3>
+                    </div>
+                    <Gavel className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
+                           style={{ color: '#b0825a' }} />
+                  </div>
+                  
+                  <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
+                      style={{ color: '#d4d4d4' }}>
+                    Gere petições jurídicas profissionais com IA avançada especializada em documentos legais.
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#b0825a' }}>
+                          AI
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Qwen Model
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#22c55e' }}>
+                          ✓
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Profissional
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
+                      Clique para gerenciar →
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="p-4 rounded-xl backdrop-blur-sm border"
-                   style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
-                   }}>
-                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>100%</div>
-                <div className="text-sm" style={{ color: '#d4d4d4' }}>Automação</div>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sem intervenção</div>
-              </div>
-              <div className="p-4 rounded-xl backdrop-blur-sm border"
-                   style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
-                   }}>
-                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>∞</div>
-                <div className="text-sm" style={{ color: '#d4d4d4' }}>Possibilidades</div>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sem limites</div>
-              </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
