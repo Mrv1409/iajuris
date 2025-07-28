@@ -1,6 +1,6 @@
-// src/app/layout.tsx
 import './globals.css';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast'; 
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,6 +30,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.className} bg-black text-white min-h-screen antialiased`}>
         {children}
+        {/* O Toaster é adicionado aqui para que as notificações apareçam em toda a aplicação */}
+        <Toaster position="bottom-right" reverseOrder={false} /> 
       </body>
     </html>
   );

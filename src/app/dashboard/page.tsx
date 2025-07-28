@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';//eslint-disable-next-line
-import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
+import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText, Calculator, DollarSign } from 'lucide-react'; // Calculator e DollarSign já importados
 
 export default function DashboardPage() {
   const [leadCount, setLeadCount] = useState(0);
@@ -24,12 +24,9 @@ export default function DashboardPage() {
     fetchLeadCount();
   }, []);
 
-  // Alterado para redirecionar para a página principal
   const handleLogout = () => {
-    // Implementar logout logic aqui (se houver, como limpar sessão/token)
     console.log('Logout realizado, redirecionando para a página principal.');
-    // Redireciona para a página principal
-    window.location.href = '/'; // Usando window.location.href para redirecionamento completo
+    window.location.href = '/'; 
   };
 
   return (
@@ -42,75 +39,76 @@ export default function DashboardPage() {
       <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-700 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse" style={{ animationDelay: '1s' }}></div>
       
       {/* Container Principal */}
-      <div className="relative z-10" style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header Row */}
-            <div className="flex items-center justify-between mb-8">
-              {/* 1. Botão "IAJuris" para o Chat (no lugar antigo da logo) */}
-              <Link 
-                href="/chat" 
-                className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
-                style={{ 
-                  background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)', // Gradiente Dourado
-                  borderColor: 'rgba(176, 130, 90, 0.2)', // Borda dourada sutil
-                  boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' // Sombra dourada
-                }}
-              >
-                <span className="text-white font-medium text-sm sm:text-base">
-                  IAJuris
-                </span>
-              </Link>
+        <div className="max-w-7xl mx-auto p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
+          style={{ 
+            backgroundColor: 'rgba(20, 20, 20, 0.8)',
+            borderColor: 'rgba(176, 130, 90, 0.2)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+          }}>
+          {/* Header Row */}
+          <div className="flex items-center justify-between mb-8">
+            {/* 1. Botão "IAJuris" para o Chat (no lugar antigo da logo) */}
+            <Link 
+              href="/chat" 
+              className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
+              style={{ 
+                background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)', // Gradiente Dourado
+                borderColor: 'rgba(176, 130, 90, 0.2)', // Borda dourada sutil
+                boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' // Sombra dourada
+              }}
+            >
+              <span className="text-white font-medium text-sm sm:text-base">
+                IAJuris
+              </span>
+            </Link>
 
-              {/* 1. Logo Centralizada */}
-              {/* Flexbox para centralizar a logo */}
-              <div className="flex-grow flex justify-center"> 
-                <div className="flex items-center group cursor-default"> {/* Cursor default para não parecer clicável */}
-                  <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
-                         style={{ color: '#b0825a' }} />
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
-                    IAJURIS
-                  </h1>
-                  <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
-                         style={{ color: '#b0825a' }} />
-                </div>
+            {/* 1. Logo Centralizada */}
+            <div className="flex-grow flex justify-center"> 
+              <div className="flex items-center group cursor-default"> 
+                <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
+                        style={{ color: '#b0825a' }} />
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
+                  IAJURIS
+                </h1>
+                <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
+                        style={{ color: '#b0825a' }} />
               </div>
-
-              {/* 2. Logout Button (com caminho para a tela de apresentação) */}
-              <button
-                onClick={handleLogout}
-                className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)',
-                  borderColor: '#6e6d6b',
-                  boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)'
-                }}
-              >
-                <LogOut className="w-5 h-5 text-white mr-2 transition-colors" />
-                <span className="text-white font-medium text-sm sm:text-base">
-                  Sair
-                </span>
-              </button>
             </div>
 
-            {/* Título e Subtítulo (mantido como está, mas a logo acima está centralizada) */}
-            <div className="text-center">
-              {/* Separador Dourado */}
-              <div className="h-0.5 w-24 mx-auto mb-4" 
-                   style={{ background: 'linear-gradient(to right, transparent, #b0825a, transparent)' }}></div>
-              <p className="text-lg sm:text-xl font-light opacity-80" style={{ color: '#d4d4d4' }}>
-                Inteligência Artificial Jurídica
-              </p>
-              <div className="mt-2 text-sm opacity-75" style={{ color: '#d4d4d4' }}>
-                POWERED BY ADVANCED AI TECHNOLOGY
-              </div>
+            {/* 2. Logout Button (com caminho para a tela de apresentação) */}
+            <button
+              onClick={handleLogout}
+              className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
+              style={{ 
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)',
+                borderColor: '#6e6d6b',
+                boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              <LogOut className="w-5 h-5 text-white mr-2 transition-colors" />
+              <span className="text-white font-medium text-sm sm:text-base">
+                Sair
+              </span>
+            </button>
+          </div>
+
+          {/* Título e Subtítulo */}
+          <div className="text-center">
+            <div className="h-0.5 w-24 mx-auto mb-4" 
+                 style={{ background: 'linear-gradient(to right, transparent, #b0825a, transparent)' }}></div>
+            <p className="text-lg sm:text-xl font-light opacity-80" style={{ color: '#d4d4d4' }}>
+              Inteligência Artificial Jurídica
+            </p>
+            <div className="mt-2 text-sm opacity-75" style={{ color: '#d4d4d4' }}>
+              POWERED BY ADVANCED AI TECHNOLOGY
             </div>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Boas-vindas */}
           <div className="mb-8 sm:mb-12">
             <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl relative overflow-hidden"
@@ -137,8 +135,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Cards Grid - Agora com 3 cards em grid responsivo */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+          {/* Cards Grid - Agora com 4 cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"> {/* Alterado para 4 colunas em xl */}
             {/* Card Leads */}
             <Link href="/dashboard/leads" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
@@ -222,7 +220,7 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
                               style={{ color: '#b0825a' }}>
-                          |
+                          | 
                         </span>
                         <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
                           Urgentes
@@ -231,7 +229,7 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
                               style={{ color: '#22c55e' }}>
-                          |
+                          | 
                         </span>
                         <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
                           Em dia
@@ -246,7 +244,7 @@ export default function DashboardPage() {
               </div>
             </Link>
 
-            {/* Card Petições - NOVO */}
+            {/* Card Petições */}
             <Link href="/dashboard/peticoes" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
@@ -268,7 +266,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <Gavel className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                           style={{ color: '#b0825a' }} />
+                               style={{ color: '#b0825a' }} />
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -281,10 +279,10 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
                               style={{ color: '#b0825a' }}>
-                          AI
+                          IA
                         </span>
                         <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
-                          Qwen Model
+                          Geração de Documentos
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -298,12 +296,104 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
-                      Clique para gerenciar →
+                      Clique para criar →
                     </div>
                   </div>
                 </div>
               </div>
             </Link>
+
+            {/* NOVO CARD: Calculadora Jurídica */}
+            <Link href="/dashboard/calculadora" className="group block"> {/* Link para a nova página */}
+              <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 rounded-xl mr-4 transition-all duration-300 group-hover:scale-110"
+                           style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
+                        <Calculator className="w-6 h-6" style={{ color: '#b0825a' }} /> {/* Ícone de calculadora */}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white transition-colors duration-300">
+                        Calculadora Jurídica
+                      </h3>
+                    </div>
+                    <DollarSign className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
+                                style={{ color: '#22c55e' }} /> {/* Ícone de dinheiro/cálculo financeiro */}
+                  </div>
+                  
+                  <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
+                      style={{ color: '#d4d4d4' }}>
+                    Realize cálculos processuais e financeiros com precisão e agilidade.
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#b0825a' }}>
+                          R$
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Cálculos Rápidos
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#22c55e' }}>
+                          %
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Precisão Garantida
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
+                      Clique para calcular →
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Status Indicators */}
+          <div className="mt-8 sm:mt-12">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+              <div className="p-4 rounded-xl backdrop-blur-sm border"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                   }}>
+                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>24/7</div>
+                <div className="text-sm" style={{ color: '#d4d4d4' }}>Disponibilidade</div>
+                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sempre ativo</div>
+              </div>
+              <div className="p-4 rounded-xl backdrop-blur-sm border"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                   }}>
+                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>100%</div>
+                <div className="text-sm" style={{ color: '#d4d4d4' }}>Automação</div>
+                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sem intervenção</div>
+              </div>
+              <div className="p-4 rounded-xl backdrop-blur-sm border"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                   }}>
+                <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>∞</div>
+                <div className="text-sm" style={{ color: '#d4d4d4' }}>Possibilidades</div>
+                <div className="text-xs" style={{ color: '#6e6d6b' }}>Sem limites</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
