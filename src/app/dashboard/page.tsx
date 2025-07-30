@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/firestore';//eslint-disable-next-line
-import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText, Calculator, DollarSign } from 'lucide-react'; // Calculator e DollarSign já importados
+import { db } from '@/firebase/firestore';
+import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText, Calculator, DollarSign, UserCheck } from 'lucide-react'; // DollarSign já importado, UserCheck também
 
 export default function DashboardPage() {
   const [leadCount, setLeadCount] = useState(0);
@@ -68,12 +68,12 @@ export default function DashboardPage() {
             <div className="flex-grow flex justify-center"> 
               <div className="flex items-center group cursor-default"> 
                 <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
-                        style={{ color: '#b0825a' }} />
+                       style={{ color: '#b0825a' }} />
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
                   IAJURIS
                 </h1>
                 <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
-                        style={{ color: '#b0825a' }} />
+                       style={{ color: '#b0825a' }} />
               </div>
             </div>
 
@@ -135,8 +135,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Cards Grid - Agora com 4 cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"> {/* Alterado para 4 colunas em xl */}
+          {/* Cards Grid - Agora com 5 cards, o que fará uma nova linha em telas menores */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"> {/* Mantido para 4 colunas em xl */}
             {/* Card Leads */}
             <Link href="/dashboard/leads" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                               style={{ color: '#b0825a' }} />
+                                style={{ color: '#b0825a' }} />
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -179,6 +179,56 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
                       Clique para ver detalhes →
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Card Clientes - NOVO CARD AQUI */}
+            <Link href="/dashboard/clientes" className="group block">
+              <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(34, 197, 94, 0.2)', // Cor de borda diferente para destaque
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 rounded-xl mr-4 transition-all duration-300 group-hover:scale-110"
+                           style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}> {/* Cor de fundo do ícone */}
+                        <UserCheck className="w-6 h-6" style={{ color: '#22c55e' }} /> {/* Ícone de usuário com check */}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white transition-colors duration-300">
+                        Controle de Clientes
+                      </h3>
+                    </div>
+                    <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
+                                 style={{ color: '#22c55e' }} /> {/* Ícone de check para o canto */}
+                  </div>
+                  
+                  <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
+                      style={{ color: '#d4d4d4' }}>
+                    Gerencie informações e histórico de todos os seus clientes cadastrados.
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-3xl sm:text-4xl font-bold mr-2 transition-colors duration-300"
+                            style={{ color: '#22c55e' }}> {/* Cor verde para o número */}
+                        {/* Aqui você pode adicionar uma contagem de clientes se tiver uma API para isso */}
+                        {/* Por enquanto, um placeholder ou um valor fixo */}
+                        {isLoading ? '...' : 'XX'} {/* Substitua XX pela contagem real se disponível */}
+                      </span>
+                      <span className="text-sm transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                        Total de clientes
+                      </span>
+                    </div>
+                    <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
+                      Clique para gerenciar →
                     </div>
                   </div>
                 </div>
@@ -266,7 +316,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <Gavel className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                               style={{ color: '#b0825a' }} />
+                                   style={{ color: '#b0825a' }} />
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -325,7 +375,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <DollarSign className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                                style={{ color: '#22c55e' }} /> {/* Ícone de dinheiro/cálculo financeiro */}
+                                 style={{ color: '#22c55e' }} /> {/* Ícone de dinheiro/cálculo financeiro */}
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -356,6 +406,65 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
                       Clique para calcular →
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* NOVO CARD: Gestão Financeira */}
+            <Link href="/dashboard/financeiro" className="group block">
+              <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 rounded-xl mr-4 transition-all duration-300 group-hover:scale-110"
+                           style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
+                        <DollarSign className="w-6 h-6" style={{ color: '#b0825a' }} /> {/* Ícone principal */}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white transition-colors duration-300">
+                        Gestão Financeira
+                      </h3>
+                    </div>
+                    <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
+                                style={{ color: '#22c55e' }} /> {/* Ícone secundário */}
+                  </div>
+                  
+                  <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
+                      style={{ color: '#d4d4d4' }}>
+                    Controle completo de honorários, despesas e fluxo de caixa do seu escritório.
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#b0825a' }}>
+                          R$
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Fluxo de Caixa
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#22c55e' }}>
+                          📊
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Indicadores
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
+                      Clique para gerenciar →
                     </div>
                   </div>
                 </div>
