@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';
-import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText, Calculator, DollarSign, UserCheck } from 'lucide-react'; // DollarSign já importado, UserCheck também
+// Importando os novos ícones para o card de Análise de Contrato Social
+import { Scale, Users, TrendingUp, Shield, Gavel, LogOut, Clock, AlertTriangle, CheckCircle, FileText, Calculator, DollarSign, UserCheck, FileSearch } from 'lucide-react'; 
 
 export default function DashboardPage() {
   const [leadCount, setLeadCount] = useState(0);
@@ -68,12 +69,12 @@ export default function DashboardPage() {
             <div className="flex-grow flex justify-center"> 
               <div className="flex items-center group cursor-default"> 
                 <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
-                       style={{ color: '#b0825a' }} />
+                        style={{ color: '#b0825a' }} />
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
                   IAJURIS
                 </h1>
                 <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
-                       style={{ color: '#b0825a' }} />
+                        style={{ color: '#b0825a' }} />
               </div>
             </div>
 
@@ -113,9 +114,9 @@ export default function DashboardPage() {
           <div className="mb-8 sm:mb-12">
             <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl relative overflow-hidden"
                  style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
               
               <div className="relative z-10">
@@ -141,9 +142,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/leads" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -159,7 +160,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                                style={{ color: '#b0825a' }} />
+                               style={{ color: '#b0825a' }} />
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -189,9 +190,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/clientes" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(34, 197, 94, 0.2)', // Cor de borda diferente para destaque
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(34, 197, 94, 0.2)', // Cor de borda diferente para destaque
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -239,9 +240,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/prazos" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -298,9 +299,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/peticoes" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -316,7 +317,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <Gavel className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                                   style={{ color: '#b0825a' }} />
+                           style={{ color: '#b0825a' }} />
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -353,13 +354,72 @@ export default function DashboardPage() {
               </div>
             </Link>
 
+            {/* NOVO CARD: Análise de Contrato Social */}
+            <Link href="/dashboard/pdfAnalysis" className="group block">
+              <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
+                   style={{ 
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 rounded-xl mr-4 transition-all duration-300 group-hover:scale-110"
+                           style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
+                        <FileSearch className="w-6 h-6" style={{ color: '#b0825a' }} />
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white transition-colors duration-300">
+                        Análise de Contrato Social
+                      </h3>
+                    </div>
+                    <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
+                                 style={{ color: '#22c55e' }} />
+                  </div>
+                  
+                  <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
+                      style={{ color: '#d4d4d4' }}>
+                    Analise PDFs e obtenha insights jurídicos em segundos com o poder da IA.
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#b0825a' }}>
+                          IA
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Análise Completa
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-2xl sm:text-3xl font-bold mr-1 transition-colors duration-300"
+                              style={{ color: '#22c55e' }}>
+                          ✓
+                        </span>
+                        <span className="text-xs transition-colors duration-300" style={{ color: '#d4d4d4' }}>
+                          Precisão
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs transition-colors duration-300" style={{ color: '#6e6d6b' }}>
+                      Clique para analisar →
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
             {/* NOVO CARD: Calculadora Jurídica */}
             <Link href="/dashboard/calculadora" className="group block"> {/* Link para a nova página */}
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -375,7 +435,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <DollarSign className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                                 style={{ color: '#22c55e' }} /> {/* Ícone de dinheiro/cálculo financeiro */}
+                                style={{ color: '#22c55e' }} /> {/* Ícone de dinheiro/cálculo financeiro */}
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -416,9 +476,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/financeiro" className="group block">
               <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 
                 {/* Content */}
@@ -434,7 +494,7 @@ export default function DashboardPage() {
                       </h3>
                     </div>
                     <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" 
-                                style={{ color: '#22c55e' }} /> {/* Ícone secundário */}
+                               style={{ color: '#22c55e' }} /> {/* Ícone secundário */}
                   </div>
                   
                   <p className="mb-6 text-sm sm:text-base transition-colors duration-300" 
@@ -477,8 +537,8 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div className="p-4 rounded-xl backdrop-blur-sm border"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)'
                    }}>
                 <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>24/7</div>
                 <div className="text-sm" style={{ color: '#d4d4d4' }}>Disponibilidade</div>
@@ -486,8 +546,8 @@ export default function DashboardPage() {
               </div>
               <div className="p-4 rounded-xl backdrop-blur-sm border"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)'
                    }}>
                 <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>100%</div>
                 <div className="text-sm" style={{ color: '#d4d4d4' }}>Automação</div>
@@ -495,8 +555,8 @@ export default function DashboardPage() {
               </div>
               <div className="p-4 rounded-xl backdrop-blur-sm border"
                    style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                    borderColor: 'rgba(176, 130, 90, 0.2)'
                    }}>
                 <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#b0825a' }}>∞</div>
                 <div className="text-sm" style={{ color: '#d4d4d4' }}>Possibilidades</div>
