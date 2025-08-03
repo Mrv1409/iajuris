@@ -1,295 +1,342 @@
 'use client';
 
-import { useState, useRef, useCallback, ChangeEvent, MouseEvent } from 'react';
-import { Upload, FileText, XCircle, ChevronRight, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';//eslint-disable-next-line
+import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
 
-// Tipos definidos para as props
-interface PdfUploaderProps {
-  onAnalysisStart: (fileName: string, analysisType: string) => void;
-  onAnalysisComplete: (result: AnalysisResult) => void;
-}
+// Interface para os tipos de análise disponíveis
+const ANALYSIS_TYPES = {
+    'resumo': 'Resumo Executivo',
+    'timeline': 'Cronologia do Processo',
+    'partes': 'Identificação das Partes',
+    'decisoes': 'Decisões Principais',
+    'estrategia': 'Análise Estratégica',
+    'completa': 'Análise Completa'
+};
 
+// Interface para o resultado da análise (supondo que a estrutura venha da sua API)
 interface AnalysisResult {
-  resposta: string;
-  sucesso: boolean;
-  metadata: {
-    documentId: string;
-    fileName: string;
-    analysisType: string;
-    fileUrl: string;
-    modelo: string;
-    timestamp: string;
-  };
+    resposta: string;
+    sucesso: boolean;
+    metadata: {
+        fileName: string;
+        analysisType: string;
+        modelo: string;
+        timestamp: string;
+        fileSize: number;
+        textLength: number;
+    };
 }
 
-// Função para estimar número de páginas baseado no tamanho do arquivo
-const estimatePages = (fileSizeBytes: number): number => {
-  // Estimativa: ~1.3MB por página (considerando PDFs com texto e imagens)
-  const averageBytesPerPage = 1.3 * 1024 * 1024;
-  return Math.ceil(fileSizeBytes / averageBytesPerPage);
-};
+// Props do componente
+interface PdfUploaderProps {
+    clientId: string;
+    onAnalysisComplete?: (result: AnalysisResult) => void;
+    onError?: (error: string) => void;
+    onProcessingStart?: (fileName: string, analysisType: string) => void;
+}
 
-// Função para validar o arquivo
-const validateFile = (file: File, maxPages: number, maxSizeMB: number): { isValid: boolean; error: string } => {
-  // Verificar tipo de arquivo
-  if (file.type !== 'application/pdf') {
-    return { isValid: false, error: 'Por favor, selecione apenas arquivos PDF.' };
-  }
-
-  // Verificar tamanho máximo do arquivo
-  const fileSizeMB = file.size / (1024 * 1024);
-  if (fileSizeMB > maxSizeMB) {
-    return { 
-      isValid: false, 
-      error: `Arquivo muito grande (${fileSizeMB.toFixed(1)}MB). Limite máximo: ${maxSizeMB}MB.` 
-    };
-  }
-
-  // Estimar e verificar número de páginas
-  const estimatedPages = estimatePages(file.size);
-  if (estimatedPages > maxPages) {
-    return { 
-      isValid: false, 
-      error: `Documento muito extenso (estimado: ${estimatedPages} páginas). Limite atual: ${maxPages} páginas para análise otimizada.` 
-    };
-  }
-
-  return { isValid: true, error: '' };
-};
-
-export default function PdfUploader({ onAnalysisStart, onAnalysisComplete }: PdfUploaderProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [analysisType, setAnalysisType] = useState('Análise Completa');
-  const [fileError, setFileError] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Configurações de limite
-  const MAX_PAGES = 15; // Limite de páginas
-  const MAX_FILE_SIZE_MB = 20; // Limite de tamanho em MB
-
-  const analysisOptions = [
-    'Análise Completa',
-    'Resumo Executivo',
-    'Cronologia do Processo',
-    'Identificação das Partes',
-    'Decisões Principais',
-    'Análise Estratégica',
-  ];
-
-
-
-  const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setFileError('');
+const PdfUploader: React.FC<PdfUploaderProps> = ({ 
+    clientId, 
+    onAnalysisComplete, 
+    onError,
+    onProcessingStart 
+}) => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [analysisType, setAnalysisType] = useState<string>('completa');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
+    const [statusMessage, setStatusMessage] = useState<string>('');
     
-    if (file) {
-      const validation = validateFile(file, MAX_PAGES, MAX_FILE_SIZE_MB);
-      if (validation.isValid) {
-        setSelectedFile(file);
-      } else {
-        setSelectedFile(null);
-        setFileError(validation.error);
-      }
-    } else {
-      setSelectedFile(null);
-    }
-  }, []);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
+    // Validação de arquivo
+    const validateFile = (file: File): string | null => {
+        // Verifica tipo
+        if (file.type !== 'application/pdf') {
+            return 'Apenas arquivos PDF são aceitos.';
+        }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    setFileError('');
-    
-    if (file) {
-      const validation = validateFile(file, MAX_PAGES, MAX_FILE_SIZE_MB);
-      if (validation.isValid) {
-        setSelectedFile(file);
-      } else {
-        setSelectedFile(null);
-        setFileError(validation.error);
-      }
-    }
-  };
+        // Verifica tamanho (máximo 50MB)
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.size > maxSize) {
+            return 'O arquivo deve ter no máximo 50MB.';
+        }
 
-  const handleRemoveFile = useCallback(() => {
-    setSelectedFile(null);
-    setFileError('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, []);
+        // Verifica se o nome do arquivo é válido
+        if (!file.name || file.name.trim() === '') {
+            return 'Nome do arquivo inválido.';
+        }
 
-  const handleAnalysisClick = useCallback(async (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      setFileError('Por favor, selecione um arquivo PDF primeiro.');
-      return;
-    }
-
-    // Validação final antes do processamento
-    const validation = validateFile(selectedFile, MAX_PAGES, MAX_FILE_SIZE_MB);
-    if (!validation.isValid) {
-      setFileError(validation.error);
-      return;
-    }
-
-    onAnalysisStart(selectedFile.name, analysisType);
-
-    // Simulação de processamento da IA
-    // Em um cenário real, o arquivo seria enviado para um servidor e a resposta da IA
-    // seria retornada aqui.
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Simulação do resultado da análise da IA
-    const mockResult: AnalysisResult = {
-      sucesso: true,
-      resposta: `Análise de **${selectedFile.name}** concluída com sucesso.`,
-      metadata: {
-        documentId: 'doc-' + Math.random().toString(36).substr(2, 9),
-        fileName: selectedFile.name,
-        analysisType: analysisType,
-        fileUrl: 'simulated-url',
-        modelo: 'IA-Juris-v1',
-        timestamp: new Date().toISOString(),
-      },
+        return null;
     };
 
-    onAnalysisComplete(mockResult);
-
-  }, [selectedFile, analysisType, onAnalysisStart, onAnalysisComplete]);
-
-  return (
-    <div className="space-y-6">
-      <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl"
-           style={{ 
-             backgroundColor: 'rgba(20, 20, 20, 0.8)',
-             borderColor: 'rgba(176, 130, 90, 0.2)',
-             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-           }}>
+    // Handler para seleção de arquivo
+    const handleFileSelect = (file: File) => {
+        const validationError = validateFile(file);
         
-        <div className="flex items-center mb-6">
-          <div className="p-3 rounded-xl mr-4"
-               style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
-            <FileText className="w-6 h-6" style={{ color: '#b0825a' }} />
-          </div>
-          <h2 className="text-2xl font-bold text-white">
-            Análise Inteligente de Documentos
-          </h2>
-        </div>
+        if (validationError) {
+            setErrorMessage(validationError);
+            onError?.(validationError);
+            return;
+        }
 
-        {/* Informações sobre limites */}
-        <div className="mb-4 p-3 rounded-lg"
-             style={{ backgroundColor: 'rgba(176, 130, 90, 0.1)', border: '1px solid rgba(176, 130, 90, 0.2)' }}>
-          <p className="text-sm" style={{ color: '#d4d4d4' }}>
-            📄 <strong>Limites atuais:</strong> Documentos de até {MAX_PAGES} páginas e {MAX_FILE_SIZE_MB}MB para análise otimizada
-          </p>
-        </div>
+        setSelectedFile(file);
+        setErrorMessage('');
+    };
 
-        {/* Área de Drag and Drop */}
-        <div
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className="relative p-8 border-2 border-dashed rounded-xl text-center transition-colors duration-300 cursor-pointer"
-          style={{
-            borderColor: fileError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(176, 130, 90, 0.5)',
-            backgroundColor: fileError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(176, 130, 90, 0.1)',
-            minHeight: '200px'
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          {selectedFile ? (
-            <div className="flex items-center justify-center p-4 rounded-xl"
-                 style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
-              <FileText className="w-6 h-6 mr-2" style={{ color: '#b0825a' }} />
-              <div className="flex flex-col items-start">
-                <span className="text-white font-medium">{selectedFile.name}</span>
-                <span className="text-xs" style={{ color: '#d4d4d4' }}>
-                  {(selectedFile.size / (1024 * 1024)).toFixed(1)}MB • ~{estimatePages(selectedFile.size)} páginas estimadas
-                </span>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); handleRemoveFile(); }}
-                      className="ml-auto p-1 rounded-full hover:bg-gray-700 transition-colors"
-                      title="Remover arquivo">
-                <XCircle className="w-5 h-5" style={{ color: '#d4d4d4' }} />
-              </button>
+    // Handler para input de arquivo
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileSelect(file);
+        }
+    };
+
+    // Handlers para drag and drop
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+
+        const files = e.dataTransfer.files;
+        if (files?.[0]) {
+            handleFileSelect(files[0]);
+        }
+    };
+
+    // Função para processar análise com retry e backoff exponencial
+    const handleAnalysis = async () => {
+        if (!selectedFile || !clientId) {
+            const error = 'Arquivo ou ID do cliente não fornecido.';
+            setErrorMessage(error);
+            onError?.(error);
+            return;
+        }
+
+        setIsProcessing(true);
+        setErrorMessage('');
+        onProcessingStart?.(selectedFile.name, ANALYSIS_TYPES[analysisType as keyof typeof ANALYSIS_TYPES]);
+
+        const maxRetries = 3;
+        let retryCount = 0;
+        let success = false;
+
+        while (retryCount < maxRetries && !success) {
+            try {
+                setStatusMessage(`Processando... (tentativa ${retryCount + 1} de ${maxRetries})`);
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('analysisType', analysisType);
+                formData.append('clientId', clientId);
+
+                const response = await fetch('/api/pdf-analysis', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.sucesso) {
+                    throw new Error(result.resposta || result.error || 'Erro ao processar análise');
+                }
+
+                // Sucesso
+                onAnalysisComplete?.(result);
+                success = true;
+                setStatusMessage('Análise concluída com sucesso!');
+            } catch (error) {
+                console.error(`Erro na tentativa ${retryCount + 1}:`, error);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    const delay = Math.pow(2, retryCount) * 1000; // Backoff exponencial (1s, 2s, 4s)
+                    setStatusMessage(`Erro. Tentando novamente em ${delay / 1000} segundos...`);
+                    await new Promise(res => setTimeout(res, delay));
+                } else {
+                    const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido ao processar arquivo';
+                    setErrorMessage(errorMsg);
+                    onError?.(errorMsg);
+                    setStatusMessage('');
+                }
+            }
+        }
+        setIsProcessing(false);
+    };
+
+    // Função para remover arquivo selecionado
+    const removeSelectedFile = () => {
+        setSelectedFile(null);
+        setErrorMessage('');
+        setStatusMessage('');
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    // Função para abrir seletor de arquivo
+    const openFileSelector = () => {
+        fileInputRef.current?.click();
+    };
+
+    return (
+        <div className="w-full max-w-2xl mx-auto p-8 bg-gray-900 rounded-3xl shadow-xl border border-gray-800">
+            <div className="mb-8 text-center">
+                <h2 className="text-3xl font-extrabold text-white mb-2">
+                    Análise de Documento Jurídico
+                </h2>
+                <p className="text-gray-400">
+                    Envie um documento PDF para análise automatizada e inteligente.
+                </p>
             </div>
-          ) : (
-            <>
-              <div className="flex justify-center mb-2">
-                <Upload className="w-12 h-12" style={{ color: fileError ? '#ef4444' : '#b0825a' }} />
-              </div>
-              <p className="font-semibold text-white">Arraste e solte um arquivo PDF aqui</p>
-              <p className="text-sm" style={{ color: '#d4d4d4' }}>ou clique para selecionar</p>
-            </>
-          )}
+
+            {/* Área de Upload */}
+            <div
+                className={`relative border-2 rounded-2xl p-8 text-center transition-all duration-300 ${
+                    dragActive
+                        ? 'border-[#b0825a] bg-gray-800 scale-[1.01]'
+                        : selectedFile
+                        ? 'border-gray-700 bg-gray-800'
+                        : 'border-gray-700 hover:border-[#b0825a] hover:bg-gray-800'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+            >
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileInputChange}
+                    className="hidden"
+                />
+
+                {selectedFile ? (
+                    // Arquivo selecionado
+                    <div className="flex flex-col items-center justify-between p-4 bg-gray-700 rounded-xl">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <FileText className="h-10 w-10 text-[#b0825a]" />
+                            <div className="text-left">
+                                <p className="font-medium text-white break-words w-full">{selectedFile.name}</p>
+                                <p className="text-sm text-gray-400">
+                                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={removeSelectedFile}
+                            className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors"
+                            disabled={isProcessing}
+                        >
+                            Remover Arquivo
+                        </button>
+                    </div>
+                ) : (
+                    // Área de upload vazia
+                    <div>
+                        <Upload className="mx-auto h-16 w-16 text-gray-500 mb-4" />
+                        <p className="text-xl font-bold text-gray-300 mb-2">
+                            Arraste e solte seu PDF aqui
+                        </p>
+                        <p className="text-gray-500 mb-4">ou</p>
+                        <button
+                            onClick={openFileSelector}
+                            className="bg-[#b0825a] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#a17752] transition-colors shadow-lg"
+                            disabled={isProcessing}
+                        >
+                            Selecionar Arquivo
+                        </button>
+                        <p className="text-xs text-gray-500 mt-4">
+                            Máximo: 50MB • Formato: PDF
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* Mensagem de status */}
+            {statusMessage && (
+                <div className="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex items-center space-x-3 shadow-md">
+                    <CheckCircle className="h-6 w-6 text-green-400 flex-shrink-0" />
+                    <p className="text-gray-300">{statusMessage}</p>
+                </div>
+            )}
+            
+            {/* Mensagem de erro */}
+            {errorMessage && (
+                <div className="mt-6 p-4 bg-red-900 border border-red-700 rounded-xl flex items-center space-x-3 shadow-md">
+                    <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0" />
+                    <p className="text-red-300">{errorMessage}</p>
+                </div>
+            )}
+
+            {/* Seletor de tipo de análise */}
+            {selectedFile && (
+                <div className="mt-8">
+                    <label className="block text-md font-medium text-gray-300 mb-2">
+                        Tipo de Análise
+                    </label>
+                    <select
+                        value={analysisType}
+                        onChange={(e) => setAnalysisType(e.target.value)}
+                        disabled={isProcessing}
+                        className="w-full p-4 bg-gray-800 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-[#b0825a] focus:border-[#b0825a] disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {Object.entries(ANALYSIS_TYPES).map(([key, label]) => (
+                            <option key={key} value={key}>
+                                {label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Botão de análise */}
+            {selectedFile && (
+                <div className="mt-8">
+                    <button
+                        onClick={handleAnalysis}
+                        disabled={isProcessing || !selectedFile}
+                        className="w-full bg-[#b0825a] text-white py-4 px-6 rounded-xl font-extrabold text-lg hover:bg-[#a17752] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center space-x-3"
+                    >
+                        {isProcessing ? (
+                            <>
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                <span>{statusMessage}</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="h-6 w-6" />
+                                <span>Iniciar Análise</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
+
+            {/* Informações adicionais */}
+            <div className="mt-8 p-6 bg-gray-800 border border-gray-700 rounded-xl shadow-md">
+                <h3 className="font-semibold text-white mb-3">Tipos de Análise Disponíveis:</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li><strong>Resumo Executivo:</strong> Visão geral em 3-4 parágrafos.</li>
+                    <li><strong>Cronologia:</strong> Linha do tempo detalhada do processo.</li>
+                    <li><strong>Partes:</strong> Identificação de autores, réus e advogados.</li>
+                    <li><strong>Decisões:</strong> Principais julgados e sentenças.</li>
+                    <li><strong>Estratégia:</strong> Análise de pontos favoráveis e desfavoráveis.</li>
+                    <li><strong>Completa:</strong> Análise abrangente com todos os aspectos.</li>
+                </ul>
+            </div>
         </div>
+    );
+};
 
-        {/* Mensagem de erro */}
-        {fileError && (
-          <div className="mt-4 p-3 rounded-lg flex items-center"
-               style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-            <AlertCircle className="w-5 h-5 mr-2" style={{ color: '#ef4444' }} />
-            <span className="text-sm" style={{ color: '#ef4444' }}>{fileError}</span>
-          </div>
-        )}
-
-        {/* Opções de Análise */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium mb-2" style={{ color: '#d4d4d4' }}>
-            Tipo de Análise
-          </label>
-          <select
-            value={analysisType}
-            onChange={(e) => setAnalysisType(e.target.value)}
-            className="w-full p-3 rounded-xl border appearance-none text-white"
-            style={{
-              backgroundColor: 'rgba(20, 20, 20, 0.8)',
-              borderColor: 'rgba(176, 130, 90, 0.3)',
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23b0825a'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3e%3c/svg%3e")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 0.75rem center',
-              backgroundSize: '1.5em 1.5em',
-            }}
-          >
-            {analysisOptions.map(option => (
-              <option key={option} value={option} className="bg-gray-800 text-white">
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Botão de Análise */}
-      <div className="flex justify-center">
-        <button
-          onClick={handleAnalysisClick}
-          disabled={!selectedFile || !!fileError}
-          className="px-8 py-3 rounded-xl flex items-center font-bold text-white transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          style={{
-            background: (!selectedFile || fileError) 
-              ? 'rgba(107, 114, 128, 0.8)' 
-              : 'linear-gradient(90deg, rgba(176,130,90,1) 0%, rgba(200,160,120,1) 100%)',
-            boxShadow: (!selectedFile || fileError) 
-              ? 'none' 
-              : '0 4px 15px rgba(176, 130, 90, 0.4)'
-          }}
-        >
-          Analisar Documento
-          <ChevronRight className="ml-2 w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  );
-}
+export default PdfUploader;
