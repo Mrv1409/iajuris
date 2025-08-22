@@ -9,48 +9,66 @@ import {
   where, 
   deleteDoc, 
   Timestamp,
-  CollectionReference, // Importado para tipagem
-  DocumentData,       // Importado para tipagem
-  Query               // Importado para tipagem
+  CollectionReference,
+  DocumentData,
+  Query,
+  getDoc
 } from 'firebase/firestore'; 
 import { db } from '@/firebase/firestore';
 import { HonorarioApiData, FinanceiroHonorarios } from '@/types/financeiro';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
+
+// Configuração do isolamento híbrido
+const OWNER_EMAIL = 'marvincosta321@gmail.com';
 
 // GET - Buscar honorários
 export async function GET(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    // 📋 PARÂMETROS DA REQUISIÇÃO
     const { searchParams } = new URL(request.url);
     const clienteId = searchParams.get('clienteId');
     const status = searchParams.get('status');
 
-    // Correção 1: Usar 'const' para honorariosRef, pois não é reatribuído
     const honorariosRef = collection(db, 'financeiro_honorarios');
-    
-    // Correção 2: Tipagem mais específica para 'q' em vez de 'any'
-    let q: Query<DocumentData> | CollectionReference<DocumentData> = honorariosRef; 
+    let q: Query<DocumentData> | CollectionReference<DocumentData> = honorariosRef;
 
-    // Aplica os filtros 'where' se existirem
-    if (clienteId) {
-      q = query(q, where('clienteId', '==', clienteId));
+    // 🎯 ISOLAMENTO HÍBRIDO - FILTRO PRINCIPAL
+    if (isOwnerMVP) {
+      // Owner vê tudo, mas pode filtrar por cliente específico se solicitado
+      if (clienteId) {
+        q = query(q, where('clienteId', '==', clienteId));
+      }
+    } else {
+      // Usuários normais só veem seus próprios dados
+      q = query(q, where('clienteId', '==', userClientId));
     }
+
+    // Filtros adicionais
     if (status) {
       q = query(q, where('status', '==', status));
     }
 
     const snapshot = await getDocs(q);
-    // Mapeia os documentos para a interface FinanceiroHonorarios
     const honorarios = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })) as FinanceiroHonorarios[]; 
+    })) as FinanceiroHonorarios[];
 
-    // ORDENAR OS HONORÁRIOS EM MEMÓRIA APÓS FILTRAGEM
-    // Ordena por dataVencimento em ordem decrescente (mais recente primeiro)
+    // Ordenar por dataVencimento em ordem decrescente
     honorarios.sort((a, b) => {
-      // Converte Timestamp para Date para comparação
       const dateA = a.dataVencimento.toDate().getTime();
       const dateB = b.dataVencimento.toDate().getTime();
-      return dateB - dateA; 
+      return dateB - dateA;
     });
 
     return NextResponse.json({
@@ -62,10 +80,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao buscar honorários:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao buscar honorários',
-        sucesso: false
-      },
+      { error: 'Erro ao buscar honorários', sucesso: false },
       { status: 500 }
     );
   }
@@ -74,7 +89,16 @@ export async function GET(request: NextRequest) {
 // POST - Criar novo honorário
 export async function POST(request: NextRequest) {
   try {
-    const body: HonorarioApiData = await request.json(); // Usa HonorarioApiData para o corpo da requisição
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    const body: HonorarioApiData = await request.json();
 
     // Validações básicas
     if (!body.clienteId || !body.clienteNome || !body.valor || !body.dataVencimento || !body.tipoHonorario || !body.descricao) {
@@ -87,10 +111,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 🛡️ GUARD DE SEGURANÇA - ISOLAMENTO
+    if (!isOwnerMVP && body.clienteId !== userClientId) {
+      return NextResponse.json(
+        { error: 'Acesso negado: você só pode criar honorários para seu próprio cliente', sucesso: false },
+        { status: 403 }
+      );
+    }
+
     // Cria o objeto FinanceiroHonorarios para salvar no Firestore
     const novoHonorario: Omit<FinanceiroHonorarios, 'id'> = {
       ...body,
-      // Converte strings de data para objetos Timestamp antes de salvar no Firestore
       dataVencimento: Timestamp.fromDate(new Date(body.dataVencimento)),
       dataPagamento: body.dataPagamento ? Timestamp.fromDate(new Date(body.dataPagamento)) : null,
       createdAt: Timestamp.fromDate(new Date()),
@@ -108,10 +139,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao criar honorário:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao criar honorário',
-        sucesso: false
-      },
+      { error: 'Erro ao criar honorário', sucesso: false },
       { status: 500 }
     );
   }
@@ -120,32 +148,56 @@ export async function POST(request: NextRequest) {
 // PUT - Atualizar honorário
 export async function PUT(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const body = await request.json();
-    // Desestrutura o body, separando id e os campos de data que precisam de conversão
     const { id, dataVencimento, dataPagamento, ...restOfDadosAtualizacao } = body as HonorarioApiData & { id: string };
 
     if (!id) {
       return NextResponse.json(
-        { 
-          error: 'ID do honorário é obrigatório',
-          sucesso: false
-        },
+        { error: 'ID do honorário é obrigatório', sucesso: false },
         { status: 400 }
       );
     }
 
-    // Cria o objeto com os dados para atualizar, já convertendo as datas
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se o honorário pertence ao usuário
+    if (!isOwnerMVP) {
+      const honorarioRef = doc(db, 'financeiro_honorarios', id);
+      const honorarioDoc = await getDoc(honorarioRef);
+      
+      if (!honorarioDoc.exists()) {
+        return NextResponse.json(
+          { error: 'Honorário não encontrado', sucesso: false },
+          { status: 404 }
+        );
+      }
+
+      const honorarioData = honorarioDoc.data() as FinanceiroHonorarios;
+      if (honorarioData.clienteId !== userClientId) {
+        return NextResponse.json(
+          { error: 'Acesso negado: você só pode atualizar seus próprios honorários', sucesso: false },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Cria o objeto com os dados para atualizar
     const dadosParaAtualizar: Partial<Omit<FinanceiroHonorarios, 'id' | 'createdAt'>> = {
-      ...restOfDadosAtualizacao, // Espalha as outras propriedades
-      updatedAt: Timestamp.fromDate(new Date()), // updatedAt já convertido
+      ...restOfDadosAtualizacao,
+      updatedAt: Timestamp.fromDate(new Date()),
     };
 
-    // Converte dataVencimento para Timestamp se existir
     if (dataVencimento) {
       dadosParaAtualizar.dataVencimento = Timestamp.fromDate(new Date(dataVencimento));
     }
 
-    // Converte dataPagamento para Timestamp ou define como null se existir
     if (dataPagamento === '') {
       dadosParaAtualizar.dataPagamento = null;
     } else if (dataPagamento) {
@@ -162,10 +214,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao atualizar honorário:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao atualizar honorário',
-        sucesso: false
-      },
+      { error: 'Erro ao atualizar honorário', sucesso: false },
       { status: 500 }
     );
   }
@@ -174,17 +223,44 @@ export async function PUT(request: NextRequest) {
 // DELETE - Deletar honorário
 export async function DELETE(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json(
-        { 
-          error: 'ID do honorário é obrigatório',
-          sucesso: false
-        },
+        { error: 'ID do honorário é obrigatório', sucesso: false },
         { status: 400 }
       );
+    }
+
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se o honorário pertence ao usuário
+    if (!isOwnerMVP) {
+      const honorarioRef = doc(db, 'financeiro_honorarios', id);
+      const honorarioDoc = await getDoc(honorarioRef);
+      
+      if (!honorarioDoc.exists()) {
+        return NextResponse.json(
+          { error: 'Honorário não encontrado', sucesso: false },
+          { status: 404 }
+        );
+      }
+
+      const honorarioData = honorarioDoc.data() as FinanceiroHonorarios;
+      if (honorarioData.clienteId !== userClientId) {
+        return NextResponse.json(
+          { error: 'Acesso negado: você só pode deletar seus próprios honorários', sucesso: false },
+          { status: 403 }
+        );
+      }
     }
 
     await deleteDoc(doc(db, 'financeiro_honorarios', id));
@@ -197,10 +273,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao deletar honorário:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao deletar honorário',
-        sucesso: false
-      },
+      { error: 'Erro ao deletar honorário', sucesso: false },
       { status: 500 }
     );
   }

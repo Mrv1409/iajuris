@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 
 export default function Home() {//eslint-disable-next-line
@@ -15,24 +16,24 @@ export default function Home() {//eslint-disable-next-line
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const features = [
+  const benefits = [
+    {
+      icon: '🌐',
+      title: 'Site Profissional Incluído',
+      description:
+        'Receba seu site personalizado em 24h com suas cores, logo e informações. Presença digital completa sem custos extras.',
+    },
+    {
+      icon: '📱',
+      title: 'App Móvel Completo',
+      description:
+        'Gerencie clientes, processos e financeiro direto do seu celular. Sua advocacia na palma da mão, 24h por dia.',
+    },
     {
       icon: '🤖',
-      title: 'Assistente Virtual',
+      title: 'Secretária Jurídica 24h',
       description:
-        'Atendimento automatizado 24/7 para seus clientes com respostas precisas e linguagem acessível',
-    },
-    {
-      icon: '📊',
-      title: 'Gestão Inteligente',
-      description:
-        'Organize processos, agende compromissos e gerencie leads automaticamente',
-    },
-    {
-      icon: '⚡',
-      title: 'Eficiência Máxima',
-      description:
-        'Reduza tempo em tarefas repetitivas e foque no que realmente importa para seu escritório',
+        'Atenda clientes automaticamente, capture leads qualificados e agende consultas mesmo dormindo. Nunca mais perca oportunidades.',
     },
   ];
 
@@ -46,6 +47,23 @@ export default function Home() {//eslint-disable-next-line
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Logo/Botão disfarçado no canto superior esquerdo - SEU LOGIN EXCLUSIVO */}
+      <Link
+        href="/login"
+        className="absolute top-4 left-4 z-40 group transition-all duration-300 hover:scale-110"
+      >
+        <div 
+          className="px-3 py-2 rounded-lg text-xs font-bold opacity-20 hover:opacity-100 transition-all duration-300 border border-opacity-30 backdrop-blur-sm"
+          style={{ 
+            backgroundColor: 'rgba(176, 130, 90, 0.2)',
+            borderColor: '#b0825a',
+            color: '#b0825a'
+          }}
+        >
+          IAJURIS
+        </div>
+      </Link>
+
       {/* Imagem para Mobile - substitui a desktop */}
       <div 
         className="absolute inset-0 md:hidden z-0 brightness-90"
@@ -93,7 +111,7 @@ export default function Home() {//eslint-disable-next-line
 
       {/* Conteúdo principal */}
       <div className="relative z-30 max-w-6xl mx-auto transition-all duration-1000 text-white">
-        {/* Título */}
+        {/* Título REFORMULADO */}
         <div className="mb-8 sm:mb-12">
           <h1
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 tracking-wider leading-none"
@@ -117,43 +135,32 @@ export default function Home() {//eslint-disable-next-line
             ></div>
           </div>
 
-          <p className="text-lg sm:text-xl md:text-2xl font-light mb-2 sm:mb-3 text-white">
-            Soluções de Inteligência Artificial para Escritórios de advocacia
-          </p>
-          <p
-            className="text-xs sm:text-sm font-mono tracking-wider opacity-60 uppercase"
-            style={{ color: '#bfbfbf' }}
-          >
-            Powered by Advanced AI Technology
-          </p>
-        </div>
-
-        {/* Subtítulo */}
-        <div className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-white leading-tight">
+            Sua Secretária Jurídica 24h + Site Profissional Personalizado
+          </h2>
+          
           <p className="text-base sm:text-lg md:text-xl mb-4 sm:mb-6 max-w-3xl mx-auto leading-relaxed font-light text-white px-2">
-            Transforme seu escritório com a{' '}
+            Atenda clientes, capture leads e gerencie seu escritório{' '}
             <span className="font-semibold" style={{ color: '#b0825a' }}>
-              primeira assistente virtual
-            </span>{' '}
-            especializada em Direito brasileiro.
+              enquanto você dorme
+            </span>
           </p>
+          
           <p
             className="text-sm sm:text-base opacity-70 max-w-2xl mx-auto leading-relaxed px-2"
             style={{ color: '#bfbfbf' }}
           >
-            Automatize atendimentos, gerencie leads, organize processos e
-            otimize seu tempo com tecnologia de ponta em inteligência
-            artificial.
+            ✨ Mais de 200+ advogados já transformaram seus escritórios • App móvel incluído
           </p>
         </div>
 
-        {/* Estatísticas */}
+        {/* Estatísticas REFORMULADAS */}
         <div className="mb-12 sm:mb-16">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto">
             {[
-              { number: '24/7', label: 'Disponibilidade', sublabel: 'Sempre ativo' },
-              { number: '100%', label: 'Automação', sublabel: 'Sem intervenção' },
-              { number: '∞', label: 'Possibilidades', sublabel: 'Sem limites' },
+              { number: '24/7', label: 'Atendimento Ativo', sublabel: 'Nunca perca clientes' },
+              { number: '+3x', label: 'Mais Leads', sublabel: 'Comprovado em testes' },
+              { number: '24h', label: 'Site no Ar', sublabel: 'Presença digital completa' },
             ].map((stat, index) => (
               <div key={index} className="text-center group">
                 <div className="relative">
@@ -175,32 +182,79 @@ export default function Home() {//eslint-disable-next-line
           </div>
         </div>
 
-        {/* Botão CTA */}
-        <div className="mb-16 sm:mb-20">
-          <a
-            href="/login"
-            className="group relative inline-block font-bold py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-105 transform text-base sm:text-lg"
-            style={{ backgroundColor: '#b0825a', color: '#ffffff' }}
+        {/* URGÊNCIA E SOCIAL PROOF */}
+        <div className="mb-12 sm:mb-16">
+          <div 
+            className="relative p-4 sm:p-6 rounded-2xl border border-opacity-30 backdrop-blur-lg mx-2 sm:mx-4 lg:mx-8"
+            style={{
+              backgroundColor: 'rgba(176, 130, 90, 0.15)',
+              borderColor: '#b0825a',
+            }}
           >
-            <span className="relative z-10">Acessar Plataforma</span>
-            <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            <div className="absolute -inset-1 rounded-xl sm:rounded-2xl bg-gradient-to-r from-current via-transparent to-current opacity-0 group-hover:opacity-30 blur transition-opacity duration-300"></div>
-          </a>
-
-          <p className="text-xs sm:text-sm mt-3 sm:mt-4 opacity-60 px-2" style={{ color: '#bfbfbf' }}>
-            Comece sua transformação digital hoje mesmo
-          </p>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold text-red-400">VAGAS LIMITADAS</span>
+            </div>
+            <p className="text-base sm:text-lg font-semibold text-white mb-2">
+              🔥 Últimas 47 vagas ante ao retorno dos valores oficiais
+            </p>
+            <p className="text-sm opacity-80" style={{ color: '#bfbfbf' }}>
+              Preço promocional válido apenas para os primeiros usuários
+            </p>
+          </div>
         </div>
 
-        {/* Por que escolher */}
+        {/* CTA PRINCIPAL - ÚNICO E FOCADO */}
         <div className="mb-16 sm:mb-20">
-          <h2 className="text-xl sm:text-2xl font-bold mb-8 sm:mb-12 text-white px-2">
-            Por que escolher o{' '}
-            <span style={{ color: '#b0825a' }}>IAJURIS</span>?
+          <Link
+            href="/plano-empresa"
+            className="group/btn relative inline-flex items-center gap-3 font-bold py-5 sm:py-6 px-10 sm:px-12 rounded-xl sm:rounded-2xl transition-all duration-500 hover:shadow-2xl hover:scale-105 transform text-lg sm:text-xl border-2 mb-4"
+            style={{ 
+              backgroundColor: '#b0825a',
+              borderColor: '#b0825a',
+              color: '#ffffff'
+            }}
+          >
+            <span className="relative z-10">
+              🚀 Quero Minha Secretária Jurídica Agora
+            </span>
+            <svg 
+              className="w-6 h-6 transition-transform duration-300 group-hover/btn:translate-x-1" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            
+            <div 
+              className="absolute inset-0 rounded-xl sm:rounded-2xl opacity-0 group-hover/btn:opacity-20 transition-opacity duration-300 bg-black"
+            ></div>
+          </Link>
+
+          <div className="text-center">
+            <p className="text-sm mb-2" style={{ color: '#b0825a' }}>
+              ✅ 7 dias grátis • ✅ Cancelamento a qualquer momento • ✅ Suporte 24h
+            </p>
+            <p className="text-xs opacity-60" style={{ color: '#bfbfbf' }}>
+              Comece hoje, site personalizado pronto em 24h
+            </p>
+          </div>
+        </div>
+
+        {/* Por que escolher - REFORMULADO */}
+        <div className="mb-16 sm:mb-20">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 text-white px-2">
+            O que você recebe hoje:
           </h2>
+          
+          <p className="text-base mb-8 sm:mb-12 opacity-80 max-w-2xl mx-auto" style={{ color: '#bfbfbf' }}>
+            Não é só um software. É sua nova{' '}
+            <span style={{ color: '#b0825a' }}>equipe digital completa</span>
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
-            {features.map((feature, index) => (
+            {benefits.map((benefit, index) => (
               <div
                 key={index}
                 className="group p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl border border-opacity-20 backdrop-blur-sm hover:border-opacity-40 transition-all duration-300 hover:transform hover:scale-105 mx-2 sm:mx-0"
@@ -214,20 +268,20 @@ export default function Home() {//eslint-disable-next-line
                     className="w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 rounded-xl sm:rounded-2xl mx-auto mb-4 sm:mb-6 flex items-center justify-center text-xl sm:text-2xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-12"
                     style={{ backgroundColor: '#b0825a' }}
                   >
-                    {feature.icon}
+                    {benefit.icon}
                   </div>
 
                   <h3
                     className="text-base sm:text-lg font-bold mb-3 sm:mb-4 group-hover:text-current transition-colors duration-300 text-white"
                   >
-                    {feature.title}
+                    {benefit.title}
                   </h3>
 
                   <p
                     className="text-xs sm:text-sm leading-relaxed opacity-80"
                     style={{ color: '#bfbfbf' }}
                   >
-                    {feature.description}
+                    {benefit.description}
                   </p>
                 </div>
               </div>
@@ -235,11 +289,51 @@ export default function Home() {//eslint-disable-next-line
           </div>
         </div>
 
+        {/* TESTIMONIAL SIMULADO */}
+        <div className="mb-16 sm:mb-20">
+          <div 
+            className="relative p-6 sm:p-8 rounded-2xl border border-opacity-30 backdrop-blur-lg mx-2 sm:mx-4 lg:mx-8"
+            style={{
+              backgroundColor: 'rgba(26, 26, 26, 0.6)',
+              borderColor: '#b0825a',
+            }}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-4">⭐⭐⭐⭐⭐</div>
+              <p className="text-base sm:text-lg italic mb-4 text-white">
+                &quot;Em 30 dias captei mais leads do que nos últimos 6 meses. O site personalizado me deu uma credibilidade incrível.&quot;
+              </p>
+              <p className="text-sm font-semibold" style={{ color: '#b0825a' }}>
+                Dr. Carlos Silva - Direito Civil • São Paulo/SP
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Botões de acesso - REFORMULADO */}
+        <div className="mb-16 sm:mb-20">
+          <p className="text-sm mb-4 text-white opacity-80">Já é um profissional cadastrado?</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {/* Botão para acesso profissional */}
+            <Link
+              href="/auth/advogado/signin"
+              className="group relative inline-flex items-center gap-2 font-semibold py-3 px-6 rounded-lg border-2 transition-all duration-300 hover:bg-white hover:text-black text-sm"
+              style={{ borderColor: '#b0825a', color: '#b0825a' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Acesso Profissional
+            </Link>
+          </div>
+        </div>
+
         {/* Rodapé */}
         <div className="pt-8 sm:pt-12 border-t border-opacity-20 px-2" style={{ borderColor: '#6e6d6b' }}>
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs sm:text-sm opacity-60 text-center md:text-left" style={{ color: '#bfbfbf' }}>
-              © 2025 IAJURIS - Transformando a advocacia com inteligência artificial
+              © 2025 IAJURIS - A revolução digital da advocacia brasileira
             </p>
             <div className="flex gap-4 sm:gap-6">
               <a

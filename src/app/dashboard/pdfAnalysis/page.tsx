@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   FileText, 
   History, 
@@ -13,6 +14,8 @@ import {
   Gavel,
   Shield
 } from 'lucide-react';
+
+import { useSession } from 'next-auth/react';
 
 // Importação dos componentes (ajuste os caminhos conforme sua estrutura)
 import PdfUploader from '@/components/pdf-analyzer/PdfUploader';
@@ -53,6 +56,18 @@ interface PdfAnalysisData {
 type AppState = 'upload' | 'processing' | 'results' | 'history';
 
 const PdfAnalysisPage: React.FC = () => {
+  
+  // ✅ USANDO NEXT-AUTH SESSION PARA DETECTAR USUÁRIO LOGADO
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
+  // ✅ LÓGICA HÍBRIDA SEGURA: MVP (Owner) + SaaS (Isolamento por ID)
+  const OWNER_EMAIL = 'marvincosta321@gmail.com';
+  const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
+  const clientId = isOwnerMVP 
+    ? OWNER_EMAIL                // MVP: Acesso exclusivo do owner
+    : session?.user?.id;         // SaaS: Isolamento real por user ID
+  
   // Estados principais
   const [currentState, setCurrentState] = useState<AppState>('upload');
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
@@ -66,26 +81,23 @@ const PdfAnalysisPage: React.FC = () => {
   // Estados de controle
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>('');
-  const [clientId, setClientId] = useState<string>('');
 
-  // Simula obtenção do clientId (adapte conforme sua autenticação)
+  // ✅ GUARD DE SEGURANÇA - Redireciona se não autorizado
   useEffect(() => {
-    // Exemplo: pegar do localStorage, context, session, etc.
-    const getClientId = () => {
-      // Aqui você pode implementar sua lógica para obter o clientId
-      // Por exemplo: de um contexto de autenticação, localStorage, etc.
-      
-      // Exemplo simples com localStorage
-      let id = localStorage.getItem('clientId');
-      if (!id) {
-        id = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('clientId', id);
-      }
-      return id;
-    };
-
-    setClientId(getClientId());
-  }, []);
+    if (status === 'loading') return; // Aguarda carregar sessão
+    
+    if (!session?.user) {
+      // Sem sessão = redireciona para login
+      router.push('/auth/advogado/signin');
+      return;
+    }
+    
+    if (!isOwnerMVP && !session.user.id) {
+      // Usuário SaaS sans ID válido = redireciona
+      router.push('/auth/advogado/signin');
+      return;
+    }
+  }, [session, status, router, isOwnerMVP]);
 
   // Handlers para PdfUploader
   const handleAnalysisStart = () => {
@@ -183,103 +195,120 @@ const PdfAnalysisPage: React.FC = () => {
 
   const stats = getStats();
 
+  // ✅ LOADING STATE - Aguarda verificação de sessão
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#000000] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b0825a] mx-auto mb-4"></div>
+          <p className="text-[#d4d4d4]">Verificando acesso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ GUARD - Se chegou aqui, usuário está autorizado
+  if (!session?.user || (!isOwnerMVP && !session.user.id)) {
+    return null; // useEffect já está redirecionando
+  }
+
   return (
-    <main className="min-h-screen relative overflow-hidden">
-      {/* Background Principal com Gradiente IAJURIS */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-amber-900"></div>
-      
-      {/* Elementos Decorativos */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-amber-800 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-700 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse" style={{ animationDelay: '1s' }}></div>
-      
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#000000] via-[#1a1a1a] to-[#2a2a2a]">
+      {/* Elementos decorativos - Background Orbs */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
+      <div className="absolute bottom-20 right-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000" />
+
       {/* Container Principal */}
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="max-w-7xl mx-auto p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
-          style={{ 
-            backgroundColor: 'rgba(20, 20, 20, 0.8)',
-            borderColor: 'rgba(176, 130, 90, 0.2)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-          }}>
-          {/* Header Row */}
-          <div className="flex items-center justify-between mb-8">
-            {/* Botão Dashboard */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-[#6e6d6b] border-opacity-20 backdrop-blur-sm"
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Botão Voltar */}
             <Link 
-              href="/dashboard" 
-              className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 font-semibold"
-              style={{ 
-                background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)',
-                borderColor: 'rgba(176, 130, 90, 0.2)',
-                boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)'
-              }}
+              href={isOwnerMVP ? "/dashboard" : "/dashboard/leads/advogado"}
+              className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group"
             >
-              <ArrowLeft className="w-4 h-4 text-white mr-2 transition-colors" />
-              <span className="text-white font-medium text-sm sm:text-base">
-                Dashboard
-              </span>
+              <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7 }} />
+              <span className="text-[#d4d4d4] group-hover:text-white text-sm font-medium">Dashboard</span>
             </Link>
 
-            {/* Logo Centralizada */}
-            <div className="flex-grow flex justify-center"> 
-              <div className="flex items-center group cursor-default"> 
-                <Scale className="w-8 h-8 sm:w-10 sm:h-10 mr-3" 
-                        style={{ color: '#b0825a' }} />
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
-                  IAJURIS
-                </h1>
-                <Gavel className="w-8 h-8 sm:w-10 sm:h-10 ml-3" 
-                        style={{ color: '#b0825a' }} />
-              </div>
+            {/* ✅ LOGO CENTRALIZADA CORRIGIDA */}
+            <div className="flex items-center justify-center flex-1 mx-4">
+              <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7 }} />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
+                IAJURIS
+              </h1>
+              <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7 }} />
             </div>
 
-            {/* Estatísticas rápidas */}
-            <div className="hidden lg:flex items-center space-x-4 px-4 py-2 rounded-xl border"
-                 style={{ 
-                   backgroundColor: 'rgba(176, 130, 90, 0.1)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)'
-                 }}>
-              <BarChart3 className="h-5 w-5" style={{ color: '#b0825a' }} />
-              <div className="text-sm">
-                <span className="text-white font-medium">{stats.successRate}%</span>
-                <span className="text-gray-400 ml-1">sucesso</span>
+            {/* Estatísticas + Indicador de Modo */}
+            <div className="hidden lg:flex items-center space-x-4">
+              {/* Estatísticas rápidas */}
+              <div className="flex items-center space-x-4 px-4 py-2 rounded-xl border"
+                   style={{ 
+                     backgroundColor: 'rgba(176, 130, 90, 0.1)',
+                     borderColor: 'rgba(176, 130, 90, 0.2)'
+                   }}>
+                <BarChart3 className="h-5 w-5" style={{ color: '#b0825a' }} />
+                <div className="text-sm">
+                  <span className="text-white font-medium">{stats.successRate}%</span>
+                  <span className="text-[#d4d4d4] ml-1">sucesso</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Título e Subtítulo */}
-          <div className="text-center">
-            <div className="h-0.5 w-24 mx-auto mb-4" 
-                 style={{ background: 'linear-gradient(to right, transparent, #b0825a, transparent)' }}></div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg mb-2">
-              Análise Inteligente de Documentos
-            </h2>
-            <p className="text-lg sm:text-xl font-light opacity-80" style={{ color: '#d4d4d4' }}>
-              Processamento jurídico com IA avançada
-            </p>
-            <div className="mt-2 text-sm opacity-75" style={{ color: '#d4d4d4' }}>
-              ANÁLISE PROFISSIONAL DE CONTRATOS E DOCUMENTOS LEGAIS
+              {/* ✅ INDICADOR DE MODO - Apenas para desenvolvimento */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="flex items-center space-x-2 px-3 py-2 rounded-lg text-xs"
+                     style={{ 
+                       backgroundColor: isOwnerMVP ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                       borderColor: isOwnerMVP ? 'rgba(34, 197, 94, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                       border: '1px solid'
+                     }}>
+                  <User className="h-3 w-3" style={{ color: isOwnerMVP ? '#22c55e' : '#3b82f6' }} />
+                  <span className="text-[#d4d4d4]">
+                    {isOwnerMVP ? 'MVP Owner' : `SaaS: ${session.user.name || 'User'}`}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Navegação de Estado */}
-        <div className="max-w-7xl mx-auto mt-8">
-          <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
+        {/* Título da Página */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-b border-[#6e6d6b] border-opacity-20"
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
+          <div className="flex items-center justify-center">
+            <FileText className="w-6 sm:w-8 h-6 sm:h-8 text-[#b0825a] mr-3" style={{ opacity: 0.7 }} />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Análise Inteligente de Documentos</h2>
+          </div>
+          <div className="mx-auto mt-4 h-0.5 w-24 bg-gradient-to-r from-transparent via-[#b0825a] to-transparent" />
+          <p className="text-center mt-2 text-[#d4d4d4] text-sm">
+            Processamento jurídico com IA avançada
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Navegação de Estado */}
+          <div className="rounded-2xl p-6 shadow-2xl mb-8"
                style={{ 
                  backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                 borderColor: 'rgba(176, 130, 90, 0.2)',
+                 border: '1px solid rgba(176, 130, 90, 0.2)',
+                 backdropFilter: 'blur(8px)',
                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                }}>
             <div className="flex items-center space-x-4 sm:space-x-6">
               <button
                 onClick={() => navigateTo('upload')}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl border transition-all duration-300 hover:scale-105 ${
+                className={`flex items-center space-x-2 px-4 py-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${
                   currentState === 'upload'
                     ? 'shadow-lg'
                     : 'hover:shadow-md'
                 }`}
                 style={{
-                  backgroundColor: currentState === 'upload' ? '#b0825a' : 'rgba(176, 130, 90, 0.1)',
+                  backgroundColor: currentState === 'upload' ? 'rgba(176, 130, 90, 0.3)' : 'rgba(176, 130, 90, 0.1)',
                   borderColor: 'rgba(176, 130, 90, 0.2)',
                   boxShadow: currentState === 'upload' ? '0 10px 25px rgba(176, 130, 90, 0.3)' : 'none'
                 }}
@@ -290,13 +319,13 @@ const PdfAnalysisPage: React.FC = () => {
 
               <button
                 onClick={() => navigateTo('history')}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl border transition-all duration-300 hover:scale-105 ${
+                className={`flex items-center space-x-2 px-4 py-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${
                   currentState === 'history'
                     ? 'shadow-lg'
                     : 'hover:shadow-md'
                 }`}
                 style={{
-                  backgroundColor: currentState === 'history' ? '#b0825a' : 'rgba(176, 130, 90, 0.1)',
+                  backgroundColor: currentState === 'history' ? 'rgba(176, 130, 90, 0.3)' : 'rgba(176, 130, 90, 0.1)',
                   borderColor: 'rgba(176, 130, 90, 0.2)',
                   boxShadow: currentState === 'history' ? '0 10px 25px rgba(176, 130, 90, 0.3)' : 'none'
                 }}
@@ -308,7 +337,7 @@ const PdfAnalysisPage: React.FC = () => {
               {/* Breadcrumb para outras telas */}
               {(currentState === 'processing' || currentState === 'results') && (
                 <>
-                  <div className="h-6 w-px bg-gray-600"></div>
+                  <div className="h-6 w-px bg-[#6e6d6b]"></div>
                   <div className="flex items-center space-x-2 px-3 py-2 rounded-lg"
                        style={{ backgroundColor: 'rgba(176, 130, 90, 0.1)' }}>
                     <Shield className="h-4 w-4" style={{ color: '#b0825a' }} />
@@ -317,7 +346,7 @@ const PdfAnalysisPage: React.FC = () => {
                         <>
                           <span className="text-white font-medium">Processando</span>
                           {processingData && (
-                            <span className="text-gray-400 ml-2">• {processingData.fileName}</span>
+                            <span className="text-[#d4d4d4] ml-2">• {processingData.fileName}</span>
                           )}
                         </>
                       )}
@@ -325,7 +354,7 @@ const PdfAnalysisPage: React.FC = () => {
                         <>
                           <span className="text-white font-medium">Resultado</span>
                           {currentAnalysis && (
-                            <span className="text-gray-400 ml-2">• {currentAnalysis.metadata.fileName}</span>
+                            <span className="text-[#d4d4d4] ml-2">• {currentAnalysis.metadata.fileName}</span>
                           )}
                         </>
                       )}
@@ -333,163 +362,182 @@ const PdfAnalysisPage: React.FC = () => {
                   </div>
                 </>
               )}
-
-              {/* Cliente ID (apenas para desenvolvimento) */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="hidden xl:flex items-center space-x-2 px-3 py-2 rounded-lg text-xs"
-                     style={{ backgroundColor: 'rgba(176, 130, 90, 0.1)' }}>
-                  <User className="h-3 w-3" style={{ color: '#b0825a' }} />
-                  <span className="text-gray-400" title={clientId}>Cliente: {clientId.substring(0, 12)}...</span>
-                </div>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* Conteúdo Principal */}
-        <div className="max-w-7xl mx-auto mt-8">
-          {/* Estado: Upload */}
-          {currentState === 'upload' && (
-            <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                 style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                 }}>
-              <div className="text-center space-y-6">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="p-4 rounded-xl mr-4 animate-pulse"
-                       style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
-                    <FileText className="w-12 h-12" style={{ color: '#b0825a' }} />
-                  </div>
-                </div>
-                
-                <h3 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
-                  Análise Inteligente de Documentos Jurídicos
-                </h3>
-                <p className="text-base sm:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: '#d4d4d4' }}>
-                  Envie um documento PDF e obtenha análises jurídicas automatizadas com nossa IA especializada em direito.
-                </p>
-
-                <PdfUploader
-                  clientId={clientId}
-                  onAnalysisComplete={handleAnalysisComplete}
-                  onError={handleAnalysisError}
-                  onProcessingStart={() => {
-                    handleAnalysisStart();
-                    // Captura dados do arquivo para o ProcessingLoader
-                    // Nota: você pode modificar o PdfUploader para passar esses dados
-                  }}
-                />
-
-                {error && (
-                  <div className="max-w-2xl mx-auto mt-8">
-                    <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                         style={{ 
-                           backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                           borderColor: 'rgba(239, 68, 68, 0.2)',
-                           boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)'
-                         }}>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
-                          <span className="text-red-400 text-lg">⚠️</span>
-                        </div>
-                        <h4 className="font-medium text-red-300 text-lg">Erro no Processamento</h4>
-                      </div>
-                      <p className="text-red-400">{error}</p>
+          {/* Conteúdo Principal */}
+          <div>
+            {/* Estado: Upload */}
+            {currentState === 'upload' && (
+              <div className="rounded-2xl p-8 shadow-2xl"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                <div className="text-center space-y-6">
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="p-4 rounded-xl mr-4 animate-pulse"
+                         style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
+                      <FileText className="w-12 h-12" style={{ color: '#b0825a' }} />
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                  
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                    Análise Inteligente de Documentos Jurídicos
+                  </h3>
+                  <p className="text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-[#d4d4d4]">
+                    Envie um documento PDF e obtenha análises jurídicas automatizadas com nossa IA especializada em direito.
+                  </p>
 
-          {/* Estado: Processing */}
-          {currentState === 'processing' && (
-            <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                 style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                 }}>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => navigateTo('upload')}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105"
-                    style={{ 
-                      backgroundColor: 'rgba(176, 130, 90, 0.1)',
-                      borderColor: 'rgba(176, 130, 90, 0.2)'
+                  {/* ✅ USANDO CLIENT ID SEGURO - MVP Owner ou SaaS User ID isolado */}
+                  <PdfUploader
+                    clientId={clientId!} // Garantido que existe pelo guard acima
+                    onAnalysisComplete={handleAnalysisComplete}
+                    onError={handleAnalysisError}
+                    onProcessingStart={() => {
+                      handleAnalysisStart();
+                      // Captura dados do arquivo para o ProcessingLoader
+                      // Nota: você pode modificar o PdfUploader para passar esses dados
                     }}
-                  >
-                    <ArrowLeft className="h-4 w-4 text-white" />
-                    <span className="text-white">Voltar</span>
-                  </button>
-                </div>
+                  />
 
-                <ProcessingLoader
-                  fileName={processingData?.fileName}
-                  fileSize={processingData?.fileSize}
-                  analysisType={processingData?.analysisType}
-                  onCancel={handleCancelProcessing}
-                  isProcessing={isProcessing}
-                  error={error}
+                  {error && (
+                    <div className="max-w-2xl mx-auto mt-8">
+                      <div className="rounded-2xl p-6 shadow-2xl"
+                           style={{ 
+                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                             border: '1px solid rgba(239, 68, 68, 0.2)',
+                             boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)'
+                           }}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
+                            <span className="text-red-400 text-lg">⚠️</span>
+                          </div>
+                          <h4 className="font-medium text-red-300 text-lg">Erro no Processamento</h4>
+                        </div>
+                        <p className="text-red-400">{error}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Estado: Processing */}
+            {currentState === 'processing' && (
+              <div className="rounded-2xl p-8 shadow-2xl"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => navigateTo('upload')}
+                      className="flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all duration-300 transform hover:scale-105"
+                      style={{ 
+                        backgroundColor: 'rgba(176, 130, 90, 0.1)',
+                        borderColor: 'rgba(176, 130, 90, 0.2)'
+                      }}
+                    >
+                      <ArrowLeft className="h-4 w-4 text-white" />
+                      <span className="text-white">Voltar</span>
+                    </button>
+                  </div>
+
+                  <ProcessingLoader
+                    fileName={processingData?.fileName}
+                    fileSize={processingData?.fileSize}
+                    analysisType={processingData?.analysisType}
+                    onCancel={handleCancelProcessing}
+                    isProcessing={isProcessing}
+                    error={error}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Estado: Results */}
+            {currentState === 'results' && currentAnalysis && (
+              <div className="rounded-2xl p-8 shadow-2xl"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => navigateTo(selectedHistoryAnalysis ? 'history' : 'upload')}
+                      className="flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all duration-300 transform hover:scale-105"
+                      style={{ 
+                        backgroundColor: 'rgba(176, 130, 90, 0.1)',
+                        borderColor: 'rgba(176, 130, 90, 0.2)'
+                      }}
+                    >
+                      <ArrowLeft className="h-4 w-4 text-white" />
+                      <span className="text-white">Voltar</span>
+                    </button>
+                  </div>
+
+                  <AnalysisResults
+                    result={currentAnalysis}
+                    onClose={handleCloseResults}
+                    onNewAnalysis={handleNewAnalysis}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Estado: History */}
+            {currentState === 'history' && (
+              <div className="rounded-2xl p-8 shadow-2xl"
+                   style={{ 
+                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
+                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                   }}>
+                {/* ✅ HISTÓRICO COM ISOLAMENTO SEGURO - MVP Owner ou SaaS User ID isolado */}
+                <HistoryList
+                  clientId={clientId!} // Garantido que existe pelo guard acima
+                  onViewAnalysis={handleViewHistoryAnalysis}
+                  onRefresh={handleHistoryRefresh}
+                  autoRefresh={false} // Defina como true se quiser auto-refresh
                 />
               </div>
-            </div>
-          )}
-
-          {/* Estado: Results */}
-          {currentState === 'results' && currentAnalysis && (
-            <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                 style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                 }}>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => navigateTo(selectedHistoryAnalysis ? 'history' : 'upload')}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105"
-                    style={{ 
-                      backgroundColor: 'rgba(176, 130, 90, 0.1)',
-                      borderColor: 'rgba(176, 130, 90, 0.2)'
-                    }}
-                  >
-                    <ArrowLeft className="h-4 w-4 text-white" />
-                    <span className="text-white">Voltar</span>
-                  </button>
-                </div>
-
-                <AnalysisResults
-                  result={currentAnalysis}
-                  onClose={handleCloseResults}
-                  onNewAnalysis={handleNewAnalysis}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Estado: History */}
-          {currentState === 'history' && (
-            <div className="p-8 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                 style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                 }}>
-              <HistoryList
-                clientId={clientId}
-                onViewAnalysis={handleViewHistoryAnalysis}
-                onRefresh={handleHistoryRefresh}
-                autoRefresh={false} // Defina como true se quiser auto-refresh
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </main>
+
+      {/* CSS para animações customizadas */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 0.1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.2;
+            transform: scale(1.05);
+          }
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animate-pulse {
+          animation: pulse 3s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
   );
 };
 

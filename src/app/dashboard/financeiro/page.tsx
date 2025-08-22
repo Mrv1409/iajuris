@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';//eslint-disable-next-line
-import { collection, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore'; // Importado Timestamp
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';
 import { 
   Scale, 
@@ -11,101 +12,117 @@ import {
   TrendingUp, 
   TrendingDown, 
   CreditCard, 
-  AlertTriangle, 
   FileText, 
-  Calendar,
-  Receipt
-} from 'lucide-react';//eslint-disable-next-line
-import { FinanceiroRecibos, FinanceiroDashboard, FinanceiroHonorarios, FinanceiroDespesas } from '@/types/financeiro'; // Importa as interfaces necessárias
+  Receipt,
+  Clock,
+  RefreshCw,
+  Gavel
+} from 'lucide-react';
+import { FinanceiroHonorarios, FinanceiroDespesas } from '@/types/financeiro';
 
-// Define a interface para o estado do componente, baseada na resposta da API
-interface DashboardFinancialState {
-  // Resumo Financeiro
-  totalReceitasPendentes: number;
-  totalReceitasPagas: number;
-  totalReceitasAtrasadas: number;
-  totalDespesasPendentes: number;
+// ✅ ISOLAMENTO HÍBRIDO MVP/SaaS - Fórmula de Sucesso
+const OWNER_EMAIL = 'marvincosta321@gmail.com';
+
+interface DashboardData {
+  totalHonorariosPagos: number;
   totalDespesasPagas: number;
-  receitaLiquida: number;
-  clientesInadimplentes: number;
-  
-  // Indicadores
-  totalHonorarios: number; // Total de honorários (todos)
-  totalDespesas: number;   // Total de despesas (todas)
-  totalRecibos: number;
-  taxaRecebimento: string;
-
-  // Últimos Recibos (virão de uma busca separada ou de um campo específico na API de dashboard se for expandida)
-  ultimosRecibos: FinanceiroRecibos[];
+  saldoLiquido: number;
+  quantidadeHonorarios: number;
+  quantidadeDespesas: number;
+  ultimaAtualizacao: string;
 }
 
 export default function FinanceiroPage() {
-  const [financialData, setFinancialData] = useState<DashboardFinancialState>({
-    totalReceitasPendentes: 0,
-    totalReceitasPagas: 0,
-    totalReceitasAtrasadas: 0,
-    totalDespesasPendentes: 0,
+  const { data: session } = useSession();
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    totalHonorariosPagos: 0,
     totalDespesasPagas: 0,
-    receitaLiquida: 0,
-    clientesInadimplentes: 0,
-    totalHonorarios: 0,
-    totalDespesas: 0,
-    totalRecibos: 0,
-    taxaRecebimento: '0.0',
-    ultimosRecibos: []
+    saldoLiquido: 0,
+    quantidadeHonorarios: 0,
+    quantidadeDespesas: 0,
+    ultimaAtualizacao: ''
   });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFinancialData = async () => {
-      try {
-        // 1. Buscar dados do Dashboard Financeiro (API de agregação)
-        const dashboardResponse = await fetch('/api/financeiro/dashboard');
-        const dashboardResult = await dashboardResponse.json();
+    if (!session?.user?.email) {
+      setIsLoading(false);
+      return;
+    }
 
-        // 2. Buscar os últimos 5 recibos (API de recibos)
-        // Usamos orderBy e limit para pegar os mais recentes
-        const recibosQuery = query(
-          collection(db, 'financeiro_recibos'), 
-          orderBy('dataEmissao', 'desc'), 
-          limit(5)
+    const fetchDashboardData = async () => {
+      try {
+        // ✅ ISOLAMENTO HÍBRIDO - PADRONIZADO
+        const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
+        const advogadoId = isOwnerMVP ? OWNER_EMAIL : session?.user?.id;
+
+        // 🔍 BUSCAR HONORÁRIOS PAGOS - CORRIGIDO: clienteId (com 'e')
+        const honorariosQuery = query(
+          collection(db, 'financeiro_honorarios'),
+          where('clienteId', '==', advogadoId),
+          where('status', '==', 'pago')
         );
-        const recibosSnapshot = await getDocs(recibosQuery);
-        const ultimosRecibosData = recibosSnapshot.docs.map(doc => ({
+        const honorariosSnapshot = await getDocs(honorariosQuery);
+        const honorariosPagos = honorariosSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as FinanceiroRecibos[];
+        })) as FinanceiroHonorarios[];
 
-        if (dashboardResult.sucesso) {
-          const apiDashboard = dashboardResult.dashboard;
-
-          setFinancialData({
-            totalReceitasPendentes: apiDashboard.resumoFinanceiro.totalReceitasPendentes,
-            totalReceitasPagas: apiDashboard.resumoFinanceiro.totalReceitasPagas,
-            totalReceitasAtrasadas: apiDashboard.resumoFinanceiro.totalReceitasAtrasadas,
-            totalDespesasPendentes: apiDashboard.resumoFinanceiro.totalDespesasPendentes,
-            totalDespesasPagas: apiDashboard.resumoFinanceiro.totalDespesasPagas,
-            receitaLiquida: apiDashboard.resumoFinanceiro.receitaLiquida,
-            clientesInadimplentes: apiDashboard.resumoFinanceiro.clientesInadimplentes,
-            totalHonorarios: apiDashboard.indicadores.totalHonorarios,
-            totalDespesas: apiDashboard.indicadores.totalDespesas,
-            totalRecibos: apiDashboard.indicadores.totalRecibos,
-            taxaRecebimento: apiDashboard.indicadores.taxaRecebimento,
-            ultimosRecibos: ultimosRecibosData // Atribui os recibos reais
-          });
-        } else {
-          console.error('Erro ao buscar dados do dashboard:', dashboardResult.error);
-        }
+        // 🔍 BUSCAR TODAS AS DESPESAS - CORRIGIDO: clienteId (com 'e')
+        const despesasQuery = query(
+          collection(db, 'financeiro_despesas'),
+          where('clienteId', '==', advogadoId)
+        );
+        const despesasSnapshot = await getDocs(despesasQuery);
+        const todasDespesas = despesasSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FinanceiroDespesas[];
         
+        // Filtrar apenas as pagas
+        const despesasPagas = todasDespesas.filter(d => d.status === 'pago');
+        
+        // 🐛 DEBUG - Log para verificar
+        console.log('AdvogadoId usado na busca:', advogadoId);
+        console.log('Total honorários encontrados:', honorariosPagos.length);
+        console.log('Total despesas encontradas:', todasDespesas.length);
+        console.log('Despesas pagas:', despesasPagas.length);
+        console.log('Honorários pagos:', honorariosPagos.map(h => ({ id: h.id, valor: h.valor, status: h.status })));
+        console.log('Status das despesas:', todasDespesas.map(d => ({ id: d.id, status: d.status, valor: d.valor })));
+
+        // 📊 CALCULAR TOTAIS
+        const totalHonorarios = honorariosPagos.reduce((acc, h) => acc + (h.valor || 0), 0);
+        const totalDespesas = despesasPagas.reduce((acc, d) => acc + (d.valor || 0), 0);
+        const saldoLiquido = totalHonorarios - totalDespesas;
+
+        // ⏰ TIMESTAMP DA ÚLTIMA ATUALIZAÇÃO
+        const agora = new Date();
+        const ultimaAtualizacao = agora.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        setDashboardData({
+          totalHonorariosPagos: totalHonorarios,
+          totalDespesasPagas: totalDespesas,
+          saldoLiquido: saldoLiquido,
+          quantidadeHonorarios: honorariosPagos.length,
+          quantidadeDespesas: despesasPagas.length,
+          ultimaAtualizacao
+        });
+
         setIsLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar dados financeiros:', error);
+        console.error('Erro ao carregar dados do dashboard:', error);
         setIsLoading(false);
       }
     };
 
-    fetchFinancialData();
-  }, []);
+    fetchDashboardData();
+  }, [session]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -114,324 +131,359 @@ export default function FinanceiroPage() {
     }).format(value);
   };
 
-  // Função para formatar Timestamp para string de data
-  const formatDate = (timestamp: Timestamp) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate();
-    return date.toLocaleDateString('pt-BR'); // Ex: 29/07/2025
-  };
+  // 🔒 Proteção de acesso - só renderiza se estiver autenticado
+  if (!session?.user?.email) {
+    return (
+      <div className="min-h-screen bg-[#000000] text-white flex items-center justify-center">
+        <div className="text-center">
+          <Scale className="w-12 h-12 mx-auto mb-4 text-[#b0825a]" style={{ opacity: 0.7 }} />
+          <h2 className="text-xl font-bold mb-2">Acesso Restrito</h2>
+          <p className="text-[#d4d4d4]">Faça login para acessar a Gestão Financeira</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
-      {/* Background Principal */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-amber-900"></div>
-      
-      {/* Elementos Decorativos */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-amber-800 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-700 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse" style={{ animationDelay: '1s' }}></div>
-      
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#000000] via-[#1a1a1a] to-[#2a2a2a]">
+      {/* Elementos decorativos - Background Orbs */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
+      <div className="absolute bottom-20 right-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000" />
+
       {/* Container Principal */}
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="max-w-7xl mx-auto p-6 rounded-2xl backdrop-blur-sm border shadow-2xl mb-8"
-          style={{ 
-            backgroundColor: 'rgba(20, 20, 20, 0.8)',
-            borderColor: 'rgba(176, 130, 90, 0.2)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-          }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-[#6e6d6b] border-opacity-20 backdrop-blur-sm"
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
           
-          {/* Navigation Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative">
+            {/* Botão Voltar */}
             <Link 
-              href="/dashboard" 
-              className="group flex items-center px-4 py-2 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95"
-              style={{ 
-                backgroundColor: 'rgba(176, 130, 90, 0.2)',
-                borderColor: 'rgba(176, 130, 90, 0.3)'
-              }}
+              href="/dashboard/leads/advogado"
+              className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group"
             >
-              <ArrowLeft className="w-5 h-5 text-white mr-2" />
-              <span className="text-white font-medium">Voltar ao Dashboard</span>
+              <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7 }} />
+              <span className="text-[#d4d4d4] group-hover:text-white text-sm font-medium">Dashboard</span>
             </Link>
 
-            <div className="flex items-center">
-              <Scale className="w-8 h-8 mr-3" style={{ color: '#b0825a' }} />
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">GESTÃO FINANCEIRA</h1>
-              <DollarSign className="w-8 h-8 ml-3" style={{ color: '#b0825a' }} />
+            {/* Logo Centralizada - CORRIGIDO: Posicionamento absoluto */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
+              <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7 }} />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
+                IAJURIS
+              </h1>
+              <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7 }} />
             </div>
 
-            <div className="flex items-center space-x-2 text-sm" style={{ color: '#d4d4d4' }}>
-              <Calendar className="w-4 h-4" />
-              <span>Julho 2025</span> {/* Pode ser dinâmico no futuro */}
+            {/* Data em Tempo Real */}
+            <div className="flex items-center space-x-2 text-sm text-[#d4d4d4]">
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                Atualizado: {dashboardData.ultimaAtualizacao || '...'}
+              </span>
+              <span className="sm:hidden">
+                {dashboardData.ultimaAtualizacao ? dashboardData.ultimaAtualizacao.split(' ')[0] : '...'}
+              </span>
             </div>
-          </div>
-
-          {/* Título */}
-          <div className="text-center">
-            <div className="h-0.5 w-24 mx-auto mb-4" 
-                 style={{ background: 'linear-gradient(to right, transparent, #b0825a, transparent)' }}></div>
-            <p className="text-lg font-light opacity-80" style={{ color: '#d4d4d4' }}>
-              Controle completo das finanças do seu escritório
-            </p>
           </div>
         </div>
 
+        {/* Título da Página */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-b border-[#6e6d6b] border-opacity-20"
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
+          <div className="flex items-center justify-center">
+            <DollarSign className="w-6 sm:w-8 h-6 sm:h-8 text-[#b0825a] mr-3" style={{ opacity: 0.7 }} />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Gestão Financeira</h2>
+          </div>
+          <div className="mx-auto mt-4 h-0.5 w-24 bg-gradient-to-r from-transparent via-[#b0825a] to-transparent" />
+          <p className="text-center mt-2 text-[#d4d4d4] text-sm">
+            Controle completo das finanças do seu escritório
+          </p>
+        </div>
+
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto">
-          {/* Cards de Resumo Financeiro */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Honorários Pagos */}
-            <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* 📊 Cards de KPIs Principais */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            
+            {/* 💰 Total Honorários Pagos */}
+            <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(34, 197, 94, 0.2)',
+                   border: '1px solid rgba(34, 197, 94, 0.2)',
+                   backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}>
-                  <TrendingUp className="w-6 h-6" style={{ color: '#22c55e' }} />
+                  <TrendingUp className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                 </div>
-                {/* Taxa de recebimento pode ser exibida aqui */}
-                <span className="text-xs font-medium px-2 py-1 rounded-full" 
-                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
-                  {financialData.taxaRecebimento}%
-                </span>
+                {!isLoading && (
+                  <div className="flex items-center space-x-1 text-xs" style={{ color: '#d4d4d4' }}>
+                    <TrendingUp className="w-3 h-3" />
+                    <span>RECEITA</span>
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-medium mb-1" style={{ color: '#d4d4d4' }}>Honorários Pagos</h3>
-              <p className="text-2xl font-bold" style={{ color: '#22c55e' }}>
-                {isLoading ? '...' : formatCurrency(financialData.totalReceitasPagas)}
+              <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Honorários Recebidos</h3>
+              <p className="text-2xl font-bold mb-2" style={{ color: '#22c55e' }}>
+                {isLoading ? (
+                  <span className="flex items-center space-x-2">
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>...</span>
+                  </span>
+                ) : (
+                  formatCurrency(dashboardData.totalHonorariosPagos)
+                )}
               </p>
-              <p className="text-xs mt-1" style={{ color: '#6e6d6b' }}>Total recebido</p>
+              <p className="text-xs text-[#6e6d6b]">
+                {isLoading ? '...' : `${dashboardData.quantidadeHonorarios} pagamentos recebidos`}
+              </p>
             </div>
 
-            {/* Total Despesas Pagas */}
-            <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
+            {/* 📉 Total Despesas Pagas */}
+            <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(239, 68, 68, 0.2)',
+                   border: '1px solid rgba(239, 68, 68, 0.2)',
+                   backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
-                  <TrendingDown className="w-6 h-6" style={{ color: '#ef4444' }} />
+                  <TrendingDown className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                 </div>
-                <span className="text-xs font-medium px-2 py-1 rounded-full" 
-                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
-                  {/* Poderia ser uma % de variação das despesas */}
-                  -X.X%
-                </span>
+                {!isLoading && (
+                  <div className="flex items-center space-x-1 text-xs" style={{ color: '#d4d4d4' }}>
+                    <TrendingDown className="w-3 h-3" />
+                    <span>SAÍDA</span>
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-medium mb-1" style={{ color: '#d4d4d4' }}>Despesas Pagas</h3>
-              <p className="text-2xl font-bold" style={{ color: '#ef4444' }}>
-                {isLoading ? '...' : formatCurrency(financialData.totalDespesasPagas)}
+              <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Despesas Pagas</h3>
+              <p className="text-2xl font-bold mb-2" style={{ color: '#ef4444' }}>
+                {isLoading ? (
+                  <span className="flex items-center space-x-2">
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>...</span>
+                  </span>
+                ) : (
+                  formatCurrency(dashboardData.totalDespesasPagas)
+                )}
               </p>
-              <p className="text-xs mt-1" style={{ color: '#6e6d6b' }}>Total de despesas</p>
+              <p className="text-xs text-[#6e6d6b]">
+                {isLoading ? '...' : `${dashboardData.quantidadeDespesas} despesas quitadas`}
+              </p>
             </div>
 
-            {/* Saldo Líquido */}
-            <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
+            {/* 💵 Saldo Líquido */}
+            <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(176, 130, 90, 0.2)',
+                   border: '1px solid rgba(176, 130, 90, 0.2)',
+                   backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
-                  <DollarSign className="w-6 h-6" style={{ color: '#b0825a' }} />
+                  <DollarSign className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                 </div>
-                <span className="text-xs font-medium px-2 py-1 rounded-full" 
-                      style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)', color: '#b0825a' }}>
-                  Líquido
-                </span>
+                {!isLoading && (
+                  <div className="flex items-center space-x-1 text-xs" style={{ color: '#d4d4d4' }}>
+                    <DollarSign className="w-3 h-3" />
+                    <span>LÍQUIDO</span>
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-medium mb-1" style={{ color: '#d4d4d4' }}>Saldo Líquido</h3>
-              <p className="text-2xl font-bold" style={{ color: '#b0825a' }}>
-                {isLoading ? '...' : formatCurrency(financialData.receitaLiquida)}
+              <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Saldo Líquido</h3>
+              <p className={`text-2xl font-bold mb-2 ${
+                isLoading ? 'text-[#b0825a]' : dashboardData.saldoLiquido >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {isLoading ? (
+                  <span className="flex items-center space-x-2">
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>...</span>
+                  </span>
+                ) : (
+                  formatCurrency(dashboardData.saldoLiquido)
+                )}
               </p>
-              <p className="text-xs mt-1" style={{ color: '#6e6d6b' }}>Receita - Despesa</p>
-            </div>
-
-            {/* Inadimplentes */}
-            <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
-                 style={{ 
-                   backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   borderColor: 'rgba(245, 158, 11, 0.2)',
-                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                 }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}>
-                  <AlertTriangle className="w-6 h-6" style={{ color: '#f59e0b' }} />
-                </div>
-                <span className="text-xs font-medium px-2 py-1 rounded-full" 
-                      style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>
-                  Atenção
-                </span>
-              </div>
-              <h3 className="text-sm font-medium mb-1" style={{ color: '#d4d4d4' }}>Inadimplentes</h3>
-              <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
-                {isLoading ? '...' : financialData.clientesInadimplentes}
+              <p className="text-xs text-[#6e6d6b]">
+                Receita menos despesas
               </p>
-              <p className="text-xs mt-1" style={{ color: '#6e6d6b' }}>Clientes em atraso</p>
             </div>
           </div>
 
-          {/* Cards de Navegação para Subpáginas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* 🧭 Cards de Navegação para Subpáginas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
             {/* Honorários */}
             <Link href="/dashboard/financeiro/honorarios" className="group block">
-              <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105"
+              <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-3xl"
                    style={{ 
                      backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 <div className="flex items-center mb-4">
                   <div className="p-3 rounded-xl mr-3" style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)' }}>
-                    <CreditCard className="w-6 h-6" style={{ color: '#b0825a' }} />
+                    <CreditCard className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                   </div>
                   <h3 className="text-lg font-bold text-white">Honorários</h3>
                 </div>
-                <p className="text-sm mb-4" style={{ color: '#d4d4d4' }}>
+                <p className="text-sm mb-4 text-[#d4d4d4]">
                   Gerencie contratos e valores de honorários por cliente
                 </p>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>
-                  Clique para gerenciar →
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#6e6d6b]">
+                    Clique para gerenciar →
+                  </span>
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
 
             {/* Despesas */}
             <Link href="/dashboard/financeiro/despesas" className="group block">
-              <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105"
+              <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-3xl"
                    style={{ 
                      backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 <div className="flex items-center mb-4">
                   <div className="p-3 rounded-xl mr-3" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
-                    <FileText className="w-6 h-6" style={{ color: '#ef4444' }} />
+                    <FileText className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                   </div>
                   <h3 className="text-lg font-bold text-white">Despesas</h3>
                 </div>
-                <p className="text-sm mb-4" style={{ color: '#d4d4d4' }}>
+                <p className="text-sm mb-4 text-[#d4d4d4]">
                   Controle todas as despesas operacionais do escritório
                 </p>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>
-                  Clique para gerenciar →
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#6e6d6b]">
+                    Clique para gerenciar →
+                  </span>
+                  <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
 
             {/* Recibos */}
-            <Link href="/dashboard/financeiro/recibos" className="group block">
-              <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105"
+            <Link href="/dashboard/financeiro/recibos" className="group block sm:col-span-2 lg:col-span-1">
+              <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-3xl"
                    style={{ 
                      backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
+                     border: '1px solid rgba(176, 130, 90, 0.2)',
+                     backdropFilter: 'blur(8px)',
                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                    }}>
                 <div className="flex items-center mb-4">
                   <div className="p-3 rounded-xl mr-3" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}>
-                    <Receipt className="w-6 h-6" style={{ color: '#22c55e' }} />
+                    <Receipt className="w-6 h-6" style={{ color: '#d4d4d4' }} />
                   </div>
                   <h3 className="text-lg font-bold text-white">Recibos</h3>
                 </div>
-                <p className="text-sm mb-4" style={{ color: '#d4d4d4' }}>
+                <p className="text-sm mb-4 text-[#d4d4d4]">
                   Emita e gerencie recibos profissionais automaticamente
                 </p>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>
-                  Clique para emitir →
-                </div>
-              </div>
-            </Link>
-
-            {/* Inadimplência */}
-            <Link href="/dashboard/financeiro/inadimplencia" className="group block">
-              <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl transition-all duration-300 hover:scale-105"
-                   style={{ 
-                     backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)',
-                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-                   }}>
-                <div className="flex items-center mb-4">
-                  <div className="p-3 rounded-xl mr-3" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}>
-                    <AlertTriangle className="w-6 h-6" style={{ color: '#f59e0b' }} />
-                  </div>
-                  <h3 className="text-lg font-bold text-white">Inadimplência</h3>
-                </div>
-                <p className="text-sm mb-4" style={{ color: '#d4d4d4' }}>
-                  Monitore e gerencie clientes com pagamentos em atraso
-                </p>
-                <div className="text-xs" style={{ color: '#6e6d6b' }}>
-                  Clique para monitorar →
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#6e6d6b]">
+                    Clique para emitir →
+                  </span>
+                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
           </div>
 
-          {/* Últimos Recibos */}
-          <div className="p-6 rounded-2xl backdrop-blur-sm border shadow-2xl"
-               style={{ 
-                 backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                 borderColor: 'rgba(176, 130, 90, 0.2)',
-                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-               }}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Últimos Recibos Emitidos</h3>
-              <Link href="/dashboard/financeiro/recibos" 
-                    className="text-sm px-4 py-2 rounded-lg transition-colors"
-                    style={{ backgroundColor: 'rgba(176, 130, 90, 0.2)', color: '#b0825a' }}>
-                Ver Todos
-              </Link>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b" style={{ borderColor: 'rgba(176, 130, 90, 0.2)' }}>
-                    <th className="text-left py-3 px-4 font-medium" style={{ color: '#d4d4d4' }}>Cliente</th>
-                    <th className="text-left py-3 px-4 font-medium" style={{ color: '#d4d4d4' }}>Valor</th>
-                    <th className="text-left py-3 px-4 font-medium" style={{ color: '#d4d4d4' }}>Data</th>
-                    <th className="text-left py-3 px-4 font-medium" style={{ color: '#d4d4d4' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={4} className="py-3 px-4 text-center text-gray-500">Carregando dados...</td>
-                    </tr>
-                  ) : financialData.ultimosRecibos.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-3 px-4 text-center text-gray-500">Nenhum recibo encontrado.</td>
-                    </tr>
-                  ) : (
-                    financialData.ultimosRecibos.map((recibo) => (
-                      <tr key={recibo.id} className="border-b hover:bg-opacity-50" 
-                          style={{ borderColor: 'rgba(176, 130, 90, 0.1)' }}>
-                        <td className="py-3 px-4 text-white">{recibo.clienteNome}</td>
-                        <td className="py-3 px-4" style={{ color: '#22c55e' }}>
-                          {formatCurrency(recibo.valorTotal)}
-                        </td>
-                        <td className="py-3 px-4" style={{ color: '#d4d4d4' }}>{formatDate(recibo.dataEmissao)}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            recibo.status === 'emitido' 
-                              ? 'bg-green-900 text-green-300' 
-                              : 'bg-yellow-900 text-yellow-300' // Ou outra cor para 'cancelado'
-                          }`}>
-                            {recibo.status === 'emitido' ? 'Emitido' : 'Cancelado'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          {/* 🏢 Seção Footer IAJURIS */}
+          <div className="mt-12">
+            <div className="rounded-2xl p-8 shadow-2xl text-center"
+                 style={{ 
+                   backgroundColor: 'rgba(20, 20, 20, 0.6)',
+                   border: '1px solid rgba(176, 130, 90, 0.15)',
+                   backdropFilter: 'blur(8px)',
+                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                 }}>
+              
+              {/* Logo/Nome IAJURIS */}
+              <div className="flex items-center justify-center mb-6">
+                <Scale className="w-8 h-8 mr-3 text-[#b0825a]" style={{ opacity: 0.7 }} />
+                <h2 className="text-3xl font-bold tracking-wider" 
+                    style={{ 
+                      background: 'linear-gradient(135deg, #b0825a, #d4af37)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text'
+                    }}>
+                  IAJURIS
+                </h2>
+                <Scale className="w-8 h-8 ml-3 text-[#b0825a]" style={{ opacity: 0.7 }} />
+              </div>
+
+              {/* Resumo Rápido */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-white mb-1">
+                    {isLoading ? '...' : dashboardData.quantidadeHonorarios + dashboardData.quantidadeDespesas}
+                  </div>
+                  <div className="text-xs text-[#6e6d6b]">
+                    Transações Processadas
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold" style={{ color: '#22c55e' }}>
+                    {isLoading ? '...' : dashboardData.totalHonorariosPagos > dashboardData.totalDespesasPagas ? '↗️' : '↘️'}
+                  </div>
+                  <div className="text-xs text-[#6e6d6b]">
+                    Tendência Financeira
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold" style={{ color: '#d4d4d4' }}>
+                    {new Date().getFullYear()}
+                  </div>
+                  <div className="text-xs text-[#6e6d6b]">
+                    Exercício Fiscal
+                  </div>
+                </div>
+              </div>
+
+              {/* Tagline */}
+              <div className="border-t pt-6 border-[#6e6d6b] border-opacity-20">
+                <p className="text-sm font-light italic text-[#d4d4d4]">
+                  &quot;Inteligência Artificial Jurídica - Transformando a advocacia moderna&quot;
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </main>
+
+      {/* CSS para animações customizadas */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 0.1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.2;
+            transform: scale(1.05);
+          }
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animate-pulse {
+          animation: pulse 3s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
   );
 }

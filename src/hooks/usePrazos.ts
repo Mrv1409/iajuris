@@ -9,21 +9,26 @@ import {
   deleteDoc, 
   orderBy, 
   query,
+  where, // ✅ ADICIONADO - Necessário para filtro
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/firestore'; // Ajuste o caminho conforme sua estrutura
 
-export function usePrazos(escritorioId: string) {
+// ✅ CORRIGIDO - Mudança de escritorioId para advogadoId
+export function usePrazos(advogadoId: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [prazos, setPrazos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Buscar prazos do Firebase
+  // ✅ CORRIGIDO - Buscar prazos do Firebase COM FILTRO de isolamento
   const fetchPrazos = async () => {
     try {
       setLoading(true);
+      
+      // ✅ ISOLAMENTO IMPLEMENTADO - Filtrar por advogadoId
       const q = query(
         collection(db, 'prazos'),
+        where('advogadoId', '==', advogadoId), // ✅ FILTRO HÍBRIDO
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
@@ -41,13 +46,13 @@ export function usePrazos(escritorioId: string) {
     }
   };
 
-  // Adicionar novo prazo
+  // ✅ CORRIGIDO - Adicionar novo prazo COM advogadoId
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addPrazo = async (novoPrazo: any): Promise<boolean> => {
     try {
       const docRef = await addDoc(collection(db, 'prazos'), {
         ...novoPrazo,
-        escritorioId: escritorioId || 'default',
+        advogadoId: advogadoId || 'default', // ✅ CORRIGIDO - advogadoId ao invés de escritorioId
         createdAt: serverTimestamp()
       });                                               
       
@@ -55,6 +60,7 @@ export function usePrazos(escritorioId: string) {
       const prazoComId = {
         id: docRef.id,
         ...novoPrazo,
+        advogadoId, // ✅ ADICIONADO - Para consistência local
         createdAt: new Date()
       };
       
@@ -103,10 +109,12 @@ export function usePrazos(escritorioId: string) {
     }
   };
 
-  // Carregar dados ao montar o componente
+  // ✅ CORRIGIDO - Recarregar quando advogadoId mudar
   useEffect(() => {
-    fetchPrazos();
-  }, []);
+    if (advogadoId) {
+      fetchPrazos();
+    }//eslint-disable-next-line
+  }, [advogadoId]); // ✅ DEPENDÊNCIA CORRIGIDA
 
   return {
     prazos,

@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast'; 
+import AuthProvider from '@/components/providers/SessionProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,7 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="IAJURIS" />
       </head>
       <body className={`${inter.className} bg-black text-white min-h-screen antialiased`}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         {/* O Toaster é adicionado aqui para que as notificações apareçam em toda a aplicação */}
         <Toaster position="bottom-right" reverseOrder={false} /> 
       </body>

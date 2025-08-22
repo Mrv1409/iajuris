@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, where } from 'firebase/firestore'; // Removido orderBy do import
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  deleteDoc, 
+  getDoc, 
+  query, 
+  where,
+  Timestamp,
+  CollectionReference,
+  DocumentData,
+  Query
+} from 'firebase/firestore';
 import { db } from '@/firebase/firestore';
-import { DocumentData, Query } from 'firebase/firestore';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
-// Interfaces
+// Configuração do isolamento híbrido
+const OWNER_EMAIL = 'marvincosta321@gmail.com';
+
+// Interface atualizada com clientId (compatibilidade com frontend)
 interface Cliente {
   id?: string;
+  clienteId: string; // 🔑 Campo de isolamento
   nome: string;
   cpf: string;
   telefone: string;
@@ -26,48 +45,79 @@ interface Cliente {
   status: 'ativo' | 'inativo' | 'pendente';
   dataAtualizacao: string;
   dataCadastro: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-// GET - Listar todos os clientes ou buscar por ID
+// GET - Listar clientes com isolamento
 export async function GET(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClienteId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    // 📋 PARÂMETROS DA REQUISIÇÃO
     const { searchParams } = new URL(request.url);
     const clienteId = searchParams.get('id');
     const searchTerm = searchParams.get('search');
     const status = searchParams.get('status');
+    const filtroClienteId = searchParams.get('clienteId'); // Parâmetro do frontend
 
+    // Buscar cliente específico por ID
     if (clienteId) {
-      // Buscar cliente específico por ID
       const clienteDoc = await getDoc(doc(db, 'clientes', clienteId));
       
       if (!clienteDoc.exists()) {
         return NextResponse.json(
-          { error: 'Cliente não encontrado' },
+          { error: 'Cliente não encontrado', sucesso: false },
           { status: 404 }
+        );
+      }
+
+      const clienteData = clienteDoc.data() as Cliente;
+
+      // 🛡️ GUARD DE SEGURANÇA - Verificar se o cliente pertence ao usuário
+      if (!isOwnerMVP && clienteData.clienteId !== userClienteId) {
+        return NextResponse.json(
+          { error: 'Acesso negado: você só pode visualizar seus próprios clientes', sucesso: false },
+          { status: 403 }
         );
       }
 
       const cliente = {
         id: clienteDoc.id,
-        ...clienteDoc.data()
+        ...clienteData
       } as Cliente;
 
       return NextResponse.json({ cliente, sucesso: true });
     }
 
-    // Listar todos os clientes com filtros opcionais
+    // Listar clientes com filtros
     const clientesRef = collection(db, 'clientes');
-    let clientesQuery: Query<DocumentData>;
+    let q: Query<DocumentData> | CollectionReference<DocumentData> = clientesRef;
 
-    if (status && status !== 'todos') {
-      // Se houver filtro de status, aplica o 'where'
-      clientesQuery = query(clientesRef, where('status', '==', status));
+    // 🎯 ISOLAMENTO HÍBRIDO - FILTRO PRINCIPAL
+    if (isOwnerMVP) {
+      // Owner vê todos, mas pode filtrar por clienteId específico se solicitado
+      if (filtroClienteId) {
+        q = query(q, where('clienteId', '==', filtroClienteId));
+      }
     } else {
-      // Caso contrário, pega todos os documentos da coleção
-      clientesQuery = clientesRef;
+      // Advogados só veem seus próprios clientes
+      q = query(q, where('clienteId', '==', userClienteId));
     }
 
-    const snapshot = await getDocs(clientesQuery);
+    // Filtros adicionais
+    if (status && status !== 'todos') {
+      q = query(q, where('status', '==', status));
+    }
+
+    const snapshot = await getDocs(q);
     let clientes = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -111,7 +161,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao buscar clientes:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro ao buscar clientes', sucesso: false },
       { status: 500 }
     );
   }
@@ -120,45 +170,68 @@ export async function GET(request: NextRequest) {
 // POST - Criar novo cliente
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClienteId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const body = await request.json();
     
     // Validações básicas
     if (!body.nome || !body.cpf || !body.telefone || !body.email) {
       return NextResponse.json(
-        { error: 'Nome, CPF, telefone e email são obrigatórios' },
+        { error: 'Nome, CPF, telefone e email são obrigatórios', sucesso: false },
         { status: 400 }
       );
     }
 
-    // Verificar se CPF já existe
+    // 🛡️ GUARD DE SEGURANÇA - ISOLAMENTO
+    // Se clienteId for fornecido no body, verificar permissão
+    const clienteIdParaUsar = body.clienteId || userClienteId;
+    if (!isOwnerMVP && clienteIdParaUsar !== userClienteId) {
+      return NextResponse.json(
+        { error: 'Acesso negado: você só pode criar clientes para seu próprio perfil', sucesso: false },
+        { status: 403 }
+      );
+    }
+
+    // Verificar se CPF já existe para este cliente (advogado)
     const cpfQuery = query(
       collection(db, 'clientes'),
-      where('cpf', '==', body.cpf)
+      where('cpf', '==', body.cpf.replace(/\D/g, '')),
+      where('clienteId', '==', clienteIdParaUsar)
     );
     const cpfSnapshot = await getDocs(cpfQuery);
     
     if (!cpfSnapshot.empty) {
       return NextResponse.json(
-        { error: 'CPF já cadastrado no sistema' },
+        { error: 'CPF já cadastrado em seus clientes', sucesso: false },
         { status: 409 }
       );
     }
 
-    // Verificar se email já existe
+    // Verificar se email já existe para este cliente (advogado)
     const emailQuery = query(
       collection(db, 'clientes'),
-      where('email', '==', body.email)
+      where('email', '==', body.email.toLowerCase().trim()),
+      where('clienteId', '==', clienteIdParaUsar)
     );
     const emailSnapshot = await getDocs(emailQuery);
     
     if (!emailSnapshot.empty) {
       return NextResponse.json(
-        { error: 'Email já cadastrado no sistema' },
+        { error: 'Email já cadastrado em seus clientes', sucesso: false },
         { status: 409 }
       );
     }
 
+    const agora = new Date();
     const novoCliente: Omit<Cliente, 'id'> = {
+      clienteId: clienteIdParaUsar, // 🔑 Campo de isolamento
       nome: body.nome.trim(),
       cpf: body.cpf.replace(/\D/g, ''), // Remove caracteres não numéricos
       telefone: body.telefone.replace(/\D/g, ''),
@@ -177,8 +250,10 @@ export async function POST(request: NextRequest) {
       estadoCivil: body.estadoCivil || 'solteiro',
       observacoes: body.observacoes?.trim() || '',
       status: 'ativo',
-      dataCadastro: new Date().toISOString(),
-      dataAtualizacao: new Date().toISOString()
+      dataCadastro: agora.toISOString(),
+      dataAtualizacao: agora.toISOString(),
+      createdAt: Timestamp.fromDate(agora),
+      updatedAt: Timestamp.fromDate(agora)
     };
 
     const docRef = await addDoc(collection(db, 'clientes'), novoCliente);
@@ -186,13 +261,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       cliente: { id: docRef.id, ...novoCliente },
       sucesso: true,
-      mensagem: 'Cliente cadastrado com sucesso'
+      message: 'Cliente cadastrado com sucesso'
     });
 
   } catch (error) {
     console.error('Erro ao criar cliente:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro ao criar cliente', sucesso: false },
       { status: 500 }
     );
   }
@@ -201,38 +276,56 @@ export async function POST(request: NextRequest) {
 // PUT - Atualizar cliente existente
 export async function PUT(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClienteId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const body = await request.json();
     const { id, ...dadosAtualizacao } = body;
 
     if (!id) {
       return NextResponse.json(
-        { error: 'ID do cliente é obrigatório' },
+        { error: 'ID do cliente é obrigatório', sucesso: false },
         { status: 400 }
       );
     }
 
-    // Verificar se cliente existe
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se o cliente pertence ao usuário
     const clienteDoc = await getDoc(doc(db, 'clientes', id));
     if (!clienteDoc.exists()) {
       return NextResponse.json(
-        { error: 'Cliente não encontrado' },
+        { error: 'Cliente não encontrado', sucesso: false },
         { status: 404 }
       );
     }
 
-    // Se estiver atualizando CPF ou email, verificar duplicatas
+    const clienteData = clienteDoc.data() as Cliente;
+    if (!isOwnerMVP && clienteData.clienteId !== userClienteId) {
+      return NextResponse.json(
+        { error: 'Acesso negado: você só pode atualizar seus próprios clientes', sucesso: false },
+        { status: 403 }
+      );
+    }
+
+    // Se estiver atualizando CPF ou email, verificar duplicatas dentro do mesmo cliente (advogado)
     if (dadosAtualizacao.cpf) {
       const cpfQuery = query(
         collection(db, 'clientes'),
-        where('cpf', '==', dadosAtualizacao.cpf)
+        where('cpf', '==', dadosAtualizacao.cpf.replace(/\D/g, '')),
+        where('clienteId', '==', clienteData.clienteId)
       );
       const cpfSnapshot = await getDocs(cpfQuery);
       
-      // Verificar se o CPF pertence a outro cliente
+      // Verificar se o CPF pertence a outro cliente do mesmo advogado
       const cpfExistente = cpfSnapshot.docs.find(doc => doc.id !== id);
       if (cpfExistente) {
         return NextResponse.json(
-          { error: 'CPF já cadastrado para outro cliente' },
+          { error: 'CPF já cadastrado para outro cliente seu', sucesso: false },
           { status: 409 }
         );
       }
@@ -241,15 +334,16 @@ export async function PUT(request: NextRequest) {
     if (dadosAtualizacao.email) {
       const emailQuery = query(
         collection(db, 'clientes'),
-        where('email', '==', dadosAtualizacao.email.toLowerCase())
+        where('email', '==', dadosAtualizacao.email.toLowerCase().trim()),
+        where('clienteId', '==', clienteData.clienteId)
       );
       const emailSnapshot = await getDocs(emailQuery);
       
-      // Verificar se o email pertence a outro cliente
+      // Verificar se o email pertence a outro cliente do mesmo advogado
       const emailExistente = emailSnapshot.docs.find(doc => doc.id !== id);
       if (emailExistente) {
         return NextResponse.json(
-          { error: 'Email já cadastrado para outro cliente' },
+          { error: 'Email já cadastrado para outro cliente seu', sucesso: false },
           { status: 409 }
         );
       }
@@ -258,7 +352,8 @@ export async function PUT(request: NextRequest) {
     // Preparar dados para atualização
     const dadosLimpos = {
       ...dadosAtualizacao,
-      dataAtualizacao: new Date().toISOString()
+      dataAtualizacao: new Date().toISOString(),
+      updatedAt: Timestamp.fromDate(new Date())
     };
 
     // Limpar campos se fornecidos
@@ -272,6 +367,9 @@ export async function PUT(request: NextRequest) {
       dadosLimpos.email = dadosLimpos.email.toLowerCase().trim();
     }
 
+    // Remover clienteId dos dados de atualização (não deve ser alterado)
+    delete dadosLimpos.clienteId;
+
     await updateDoc(doc(db, 'clientes', id), dadosLimpos);
 
     // Buscar cliente atualizado
@@ -284,13 +382,13 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       cliente,
       sucesso: true,
-      mensagem: 'Cliente atualizado com sucesso'
+      message: 'Cliente atualizado com sucesso'
     });
 
   } catch (error) {
     console.error('Erro ao atualizar cliente:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro ao atualizar cliente', sucesso: false },
       { status: 500 }
     );
   }
@@ -299,36 +397,53 @@ export async function PUT(request: NextRequest) {
 // DELETE - Excluir cliente
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const clienteId = searchParams.get('id');
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
 
-    if (!clienteId) {
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClienteId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    const { searchParams } = new URL(request.url);
+    const clienteIdParam = searchParams.get('id');
+
+    if (!clienteIdParam) {
       return NextResponse.json(
-        { error: 'ID do cliente é obrigatório' },
+        { error: 'ID do cliente é obrigatório', sucesso: false },
         { status: 400 }
       );
     }
 
-    // Verificar se cliente existe
-    const clienteDoc = await getDoc(doc(db, 'clientes', clienteId));
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se o cliente pertence ao usuário
+    const clienteDoc = await getDoc(doc(db, 'clientes', clienteIdParam));
     if (!clienteDoc.exists()) {
       return NextResponse.json(
-        { error: 'Cliente não encontrado' },
+        { error: 'Cliente não encontrado', sucesso: false },
         { status: 404 }
       );
     }
 
-    await deleteDoc(doc(db, 'clientes', clienteId));
+    const clienteData = clienteDoc.data() as Cliente;
+    if (!isOwnerMVP && clienteData.clienteId !== userClienteId) {
+      return NextResponse.json(
+        { error: 'Acesso negado: você só pode deletar seus próprios clientes', sucesso: false },
+        { status: 403 }
+      );
+    }
+
+    await deleteDoc(doc(db, 'clientes', clienteIdParam));
 
     return NextResponse.json({
       sucesso: true,
-      mensagem: 'Cliente excluído com sucesso'
+      message: 'Cliente excluído com sucesso'
     });
 
   } catch (error) {
     console.error('Erro ao excluir cliente:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro ao excluir cliente', sucesso: false },
       { status: 500 }
     );
   }

@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Scale, Gavel, ArrowLeft, Plus, Download, Edit, Trash2, Save, Calendar, Phone, User, FileText, AlertCircle } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { usePrazos } from '@/hooks/usePrazos'; // Ajuste o caminho conforme sua estrutura
 
 // Definindo o tipo para os dados do prazo
@@ -17,8 +20,15 @@ interface PrazoData {
 }
 
 export default function PrazosProcessuaisPage() {
-  // Substitua 'seu-escritorio-id' pelo ID real do escritório logado
-  const { prazos, loading, addPrazo, updatePrazo, deletePrazo } = usePrazos('seu-escritorio-id');
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  // ✅ ISOLAMENTO HÍBRIDO MVP/SaaS - PADRÃO REPLICADO
+  const OWNER_EMAIL = 'marvincosta321@gmail.com';
+  const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
+  const advogadoId = isOwnerMVP ? OWNER_EMAIL : session?.user?.id;
+
+  const { prazos, loading, addPrazo, updatePrazo, deletePrazo } = usePrazos(String(advogadoId));
 
   const [anotacoes, setAnotacoes] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -42,6 +52,13 @@ export default function PrazosProcessuaisPage() {
     prioridade: 'media'
   });
 
+  // ✅ GUARD DE SEGURANÇA CORRIGIDO - Inclui caso MVP
+  if (!session?.user?.id && !isOwnerMVP) {
+    toast.error('Sessão inválida. Redirecionando...');
+    router.push('/auth/advogado/signin');
+    return null;
+  }
+
   // Função para adicionar prazo (agora com Firebase)
   const handleAddPrazo = async () => {
     if (newPrazo.nomeCliente && newPrazo.dataProcesso && newPrazo.assunto) {
@@ -58,9 +75,9 @@ export default function PrazosProcessuaisPage() {
           prioridade: 'media'
         });
         setShowAddForm(false);
-        alert('Prazo adicionado com sucesso!');
+        toast.success('Prazo adicionado com sucesso!');
       } else {
-        alert('Erro ao adicionar prazo. Tente novamente.');
+        toast.error('Erro ao adicionar prazo. Tente novamente.');
       }
     }
   };
@@ -71,9 +88,9 @@ export default function PrazosProcessuaisPage() {
       const success = await deletePrazo(id);
       
       if (success) {
-        alert('Prazo removido com sucesso!');
+        toast.success('Prazo removido com sucesso!');
       } else {
-        alert('Erro ao remover prazo. Tente novamente.');
+        toast.error('Erro ao remover prazo. Tente novamente.');
       }
     }
   };
@@ -108,9 +125,9 @@ export default function PrazosProcessuaisPage() {
           prazoVencimento: '',
           prioridade: 'media'
         });
-        alert('Prazo atualizado com sucesso!');
+        toast.success('Prazo atualizado com sucesso!');
       } else {
-        alert('Erro ao atualizar prazo. Tente novamente.');
+        toast.error('Erro ao atualizar prazo. Tente novamente.');
       }
     }
   };
@@ -130,11 +147,11 @@ export default function PrazosProcessuaisPage() {
   };
 
   const handleGeneratePDF = () => {
-    alert('Funcionalidade de gerar PDF será implementada em breve!');
+    toast.success('Funcionalidade de gerar PDF será implementada em breve!');
   };
 
   const handleSaveAnotacoes = () => {
-    alert('Anotações salvas com sucesso!');
+    toast.success('Anotações salvas com sucesso!');
   };
 
   // Loading state - Aplicando cores do DS
@@ -154,36 +171,35 @@ export default function PrazosProcessuaisPage() {
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#000000] via-[#1a1a1a] to-[#2a2a2a]">
       {/* Elementos decorativos - Background Orbs */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
-      <div className="absolute bottom-20 right-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000" /> {/* Adicionado um delay para variação */}
+      <div className="absolute bottom-20 right-20 w-72 h-72 bg-[#b0825a] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000" />
 
       {/* Header - Aplicando Header Pattern */}
-      {/* Container Principal para o Header para aplicar backdrop-filter e bordas */}
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 border-b border-[#6e6d6b] border-opacity-20 backdrop-blur-sm"
-           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}> {/* Cor do container principal */}
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Botão Voltar */}
             <Link 
-              href="/dashboard"
-              className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group" // Ajustes de bg e hover
+              href="/dashboard/leads/advogado"
+              className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group order-1 sm:order-none"
             >
-              <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Estilo de ícone */}
+              <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               <span className="text-[#d4d4d4] group-hover:text-white text-sm font-medium">Dashboard</span>
             </Link>
 
             {/* Logo Centralizada - Usando cores do DS */}
-            <div className="flex items-center justify-center">
-              <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone dourado */}
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#b0825a] text-shadow-lg"> {/* Título dourado com text-shadow (Tailwind não tem nativo, mas podemos simular com um plugin ou adicionar via CSS) */}
+            <div className="flex items-center justify-center order-2 sm:order-none">
+              <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
                 IAJURIS
               </h1>
-              <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone dourado */}
+              <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
             </div>
 
             {/* Nome do Escritório - Ajustando cores do DS */}
-            <div className="text-right">
+            <div className="text-center sm:text-right order-3 sm:order-none">
               <div className="text-sm text-white font-medium">Escritório Jurídico</div>
-              <div className="text-xs text-[#d4d4d4] opacity-80 font-light">Advocacia & Consultoria</div> {/* Subtítulo */}
+              <div className="text-xs text-[#d4d4d4] opacity-80 font-light">Advocacia & Consultoria</div>
             </div>
           </div>
         </div>
@@ -191,11 +207,11 @@ export default function PrazosProcessuaisPage() {
 
       {/* Título da Página - Ajustando cores do DS */}
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-6 border-b border-[#6e6d6b] border-opacity-20"
-           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}> {/* Container do título */}
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center">
-            <Calendar className="w-8 h-8 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone dourado */}
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">Prazos Processuais</h2>
+            <Calendar className="w-6 sm:w-8 h-6 sm:h-8 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Prazos Processuais</h2>
           </div>
           {/* Separador - Linha dourada sutil */}
           <div className="mx-auto mt-4 h-0.5 w-24 bg-gradient-to-r from-transparent via-[#b0825a] to-transparent" />
@@ -204,26 +220,24 @@ export default function PrazosProcessuaisPage() {
 
       {/* Botões de Ação - Aplicando Botões Principais */}
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-6 border-b border-[#6e6d6b] border-opacity-20"
-           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}> {/* Container dos botões de ação */}
+           style={{ backgroundColor: 'rgba(20, 20, 20, 0.8)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              // Gradiente Dourado para botões principais
-              className="flex items-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl" // Ajustes de padding, border-radius, font-weight, hover/active e shadow
+              className="w-full sm:w-auto flex items-center justify-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
               style={{ boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' }}
             >
-              <Plus className="w-5 h-5 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+              <Plus className="w-5 h-5 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               <span className="font-medium">Adicionar Prazo</span>
             </button>
 
             <button
               onClick={handleGeneratePDF}
-              // Gradiente Dourado para botões principais
-              className="flex items-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl" // Ajustes de padding, border-radius, font-weight, hover/active e shadow
+              className="w-full sm:w-auto flex items-center justify-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
               style={{ boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' }}
             >
-              <Download className="w-5 h-5 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+              <Download className="w-5 h-5 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               <span className="font-medium">Gerar PDF</span>
             </button>
           </div>
@@ -237,34 +251,65 @@ export default function PrazosProcessuaisPage() {
           <div 
             className="mb-8 rounded-2xl p-6 shadow-2xl transition-all duration-300"
             style={{ 
-              backgroundColor: 'rgba(20, 20, 20, 0.8)', // Cor do container principal
-              border: '1px solid rgba(176, 130, 90, 0.2)', // Borda dourada sutil
-              backdropFilter: 'blur(8px)', // Backdrop-filter
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)' // Box-shadow
+              backgroundColor: 'rgba(20, 20, 20, 0.8)',
+              border: '1px solid rgba(176, 130, 90, 0.2)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
             }}
           >
             <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <Plus className="w-5 h-5 mr-2 text-[#b0825a]" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone dourado */}
+              <Plus className="w-5 h-5 mr-2 text-[#b0825a]" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               Adicionar Novo Prazo
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Inputs - Aplicando Inputs Padrão */}
-              {Object.keys(newPrazo).map((key) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-[#d4d4d4] mb-2 capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').trim()} {/* Formata o nome do campo para exibição */}
-                  </label>
-                  <input
-                    type={key.includes('data') || key.includes('Vencimento') ? 'date' : (key === 'telefone' ? 'tel' : 'text')}
-                    value={newPrazo[key as keyof PrazoData]}
-                    onChange={(e) => setNewPrazo({...newPrazo, [key]: e.target.value})}
-                    className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]" // Ajustes de padding, border-radius, bg, border, focus e hover
-                    placeholder={`Digite ${key.replace(/([A-Z])/g, ' $1').toLowerCase().trim()}`}
-                  />
-                </div>
-              ))}
-              {/* Selects precisam de tratamento separado se forem mais complexos, mas o input padrão já ajuda */}
+              {/* Nome do Cliente */}
+              <div>
+                <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Nome do Cliente</label>
+                <input
+                  type="text"
+                  value={newPrazo.nomeCliente}
+                  onChange={(e) => setNewPrazo({...newPrazo, nomeCliente: e.target.value})}
+                  className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                  placeholder="Digite o nome do cliente"
+                />
+              </div>
+
+              {/* Data do Processo */}
+              <div>
+                <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Data do Processo</label>
+                <input
+                  type="date"
+                  value={newPrazo.dataProcesso}
+                  onChange={(e) => setNewPrazo({...newPrazo, dataProcesso: e.target.value})}
+                  className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                />
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Telefone</label>
+                <input
+                  type="tel"
+                  value={newPrazo.telefone}
+                  onChange={(e) => setNewPrazo({...newPrazo, telefone: e.target.value})}
+                  className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                  placeholder="Digite o telefone"
+                />
+              </div>
+
+              {/* Prazo de Vencimento */}
+              <div>
+                <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Prazo de Vencimento</label>
+                <input
+                  type="date"
+                  value={newPrazo.prazoVencimento}
+                  onChange={(e) => setNewPrazo({...newPrazo, prazoVencimento: e.target.value})}
+                  className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                />
+              </div>
+
+              {/* Situação */}
               <div>
                 <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Situação</label>
                 <select
@@ -272,7 +317,6 @@ export default function PrazosProcessuaisPage() {
                   onChange={(e) => setNewPrazo({...newPrazo, situacao: e.target.value})}
                   className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
                 >
-                  <option value="">Selecione a situação</option>
                   <option value="Em andamento">Em andamento</option>
                   <option value="Pendente">Pendente</option>
                   <option value="Concluído">Concluído</option>
@@ -280,6 +324,7 @@ export default function PrazosProcessuaisPage() {
                 </select>
               </div>
               
+              {/* Prioridade */}
               <div>
                 <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Prioridade</label>
                 <select
@@ -293,6 +338,7 @@ export default function PrazosProcessuaisPage() {
                 </select>
               </div>
               
+              {/* Assunto */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Assunto</label>
                 <input
@@ -305,17 +351,16 @@ export default function PrazosProcessuaisPage() {
               </div>
             </div>
             
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-4">
               <button
                 onClick={() => setShowAddForm(false)}
-                className="px-6 py-2 bg-[#6e6d6b] hover:bg-[#5a5955] rounded-xl transition-all duration-300 transform hover:scale-105 hover:opacity-90" // Botão secundário
+                className="w-full sm:w-auto px-6 py-2 bg-[#6e6d6b] hover:bg-[#5a5955] rounded-xl transition-all duration-300 transform hover:scale-105 hover:opacity-90"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddPrazo}
-                // Gradiente Dourado para botões principais
-                className="px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
+                className="w-full sm:w-auto px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
                 style={{ boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' }}
               >
                 Adicionar
@@ -338,41 +383,69 @@ export default function PrazosProcessuaisPage() {
             >
               <Calendar className="w-16 h-16 text-[#b0825a] mx-auto mb-4" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               <p className="text-[#d4d4d4] text-lg">Nenhum prazo cadastrado ainda</p>
-              <p className="text-gray-400 text-sm">Clique em &quot;Adicionar Prazo&quot; para começar</p> {/* Mantido gray-400 para contraste leve, mas pode ser d4d4d4 */}
+              <p className="text-gray-400 text-sm">Clique em &quot;Adicionar Prazo&quot; para começar</p>
             </div>
           ) : (
             prazos.map((prazo) => (
               <div 
                 key={prazo.id} 
-                // Estilo do card de prazo
-                className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl" // Efeito de hover no card
+                className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl"
                 style={{ 
-                  backgroundColor: 'rgba(20, 20, 20, 0.8)', // Cor do container principal
-                  border: '1px solid rgba(176, 130, 90, 0.2)', // Borda dourada sutil
-                  backdropFilter: 'blur(8px)', // Backdrop-filter
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)' // Box-shadow
+                  backgroundColor: 'rgba(20, 20, 20, 0.8)',
+                  border: '1px solid rgba(176, 130, 90, 0.2)',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                 }}
               >
                 {editingId === prazo.id ? (
                   // Modo de edição
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Inputs de Edição - Aplicando Inputs Padrão */}
-                      {Object.keys(editingData).map((key) => (
-                        <div key={key}>
-                          <label className="block text-sm font-medium text-[#d4d4d4] mb-2 capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </label>
-                          <input
-                            type={key.includes('data') || key.includes('Vencimento') ? 'date' : (key === 'telefone' ? 'tel' : 'text')}
-                            value={editingData[key as keyof PrazoData]}
-                            onChange={(e) => setEditingData({...editingData, [key]: e.target.value})}
-                            className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
-                            placeholder={`Digite ${key.replace(/([A-Z])/g, ' $1').toLowerCase().trim()}`}
-                          />
-                        </div>
-                      ))}
-                      {/* Selects de Edição */}
+                      {/* Nome do Cliente */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Nome do Cliente</label>
+                        <input
+                          type="text"
+                          value={editingData.nomeCliente}
+                          onChange={(e) => setEditingData({...editingData, nomeCliente: e.target.value})}
+                          className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                        />
+                      </div>
+
+                      {/* Data do Processo */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Data do Processo</label>
+                        <input
+                          type="date"
+                          value={editingData.dataProcesso}
+                          onChange={(e) => setEditingData({...editingData, dataProcesso: e.target.value})}
+                          className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                        />
+                      </div>
+
+                      {/* Telefone */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Telefone</label>
+                        <input
+                          type="tel"
+                          value={editingData.telefone}
+                          onChange={(e) => setEditingData({...editingData, telefone: e.target.value})}
+                          className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                        />
+                      </div>
+
+                      {/* Prazo de Vencimento */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Prazo de Vencimento</label>
+                        <input
+                          type="date"
+                          value={editingData.prazoVencimento}
+                          onChange={(e) => setEditingData({...editingData, prazoVencimento: e.target.value})}
+                          className="w-full p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02]"
+                        />
+                      </div>
+
+                      {/* Situação */}
                       <div>
                         <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Situação</label>
                         <select
@@ -387,6 +460,7 @@ export default function PrazosProcessuaisPage() {
                         </select>
                       </div>
                       
+                      {/* Prioridade */}
                       <div>
                         <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Prioridade</label>
                         <select
@@ -400,6 +474,7 @@ export default function PrazosProcessuaisPage() {
                         </select>
                       </div>
 
+                      {/* Assunto */}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-[#d4d4d4] mb-2">Assunto</label>
                         <input
@@ -411,17 +486,16 @@ export default function PrazosProcessuaisPage() {
                       </div>
                     </div>
                     
-                    <div className="flex justify-end gap-4 pt-4 border-t border-[#6e6d6b] border-opacity-20">
+                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4 border-t border-[#6e6d6b] border-opacity-20">
                       <button
                         onClick={handleCancelEdit}
-                        className="px-6 py-2 bg-[#6e6d6b] hover:bg-[#5a5955] rounded-xl transition-all duration-300 transform hover:scale-105 hover:opacity-90"
+                        className="w-full sm:w-auto px-6 py-2 bg-[#6e6d6b] hover:bg-[#5a5955] rounded-xl transition-all duration-300 transform hover:scale-105 hover:opacity-90"
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={handleSaveEdit}
-                        // Gradiente Dourado para botões principais
-                        className="flex items-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
+                        className="w-full sm:w-auto flex items-center justify-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
                         style={{ boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' }}
                       >
                         <Save className="w-4 h-4 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
@@ -434,7 +508,7 @@ export default function PrazosProcessuaisPage() {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center">
-                        <User className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+                        <User className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         <div>
                           <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Nome do Cliente</label>
                           <div className="text-white font-medium">{prazo.nomeCliente}</div>
@@ -442,7 +516,7 @@ export default function PrazosProcessuaisPage() {
                       </div>
                       
                       <div className="flex items-center">
-                        <Calendar className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+                        <Calendar className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         <div>
                           <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Data do Processo</label>
                           <div className="text-white font-medium">{prazo.dataProcesso}</div>
@@ -450,7 +524,7 @@ export default function PrazosProcessuaisPage() {
                       </div>
                       
                       <div className="flex items-center">
-                        <Phone className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+                        <Phone className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         <div>
                           <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Telefone</label>
                           <div className="text-white font-medium">{prazo.telefone}</div>
@@ -458,9 +532,9 @@ export default function PrazosProcessuaisPage() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="flex items-center">
-                        <FileText className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+                        <FileText className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         <div>
                           <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Assunto</label>
                           <div className="text-white font-medium">{prazo.assunto}</div>
@@ -468,19 +542,34 @@ export default function PrazosProcessuaisPage() {
                       </div>
                       
                       <div className="flex items-center">
-                        <AlertCircle className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone temático */}
+                        <AlertCircle className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         <div>
                           <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Situação</label>
                           <div className="text-white font-medium">{prazo.situacao}</div>
                         </div>
                       </div>
+
+                      <div className="flex items-center">
+                        <Calendar className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
+                        <div>
+                          <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Prazo de Vencimento</label>
+                          <div className="text-white font-medium">{prazo.prazoVencimento}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <AlertCircle className="w-5 h-5 text-[#b0825a] mr-3" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
+                        <div>
+                          <label className="block text-sm font-medium text-[#d4d4d4] mb-1">Prioridade</label>
+                          <div className="text-white font-medium capitalize">{prazo.prioridade}</div>
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="flex justify-end gap-4 pt-4 border-t border-[#6e6d6b] border-opacity-20">
+                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4 border-t border-[#6e6d6b] border-opacity-20">
                       <button
                         onClick={() => handleEditPrazo(prazo)}
-                        // Botão de ação secundário
-                        className="flex items-center px-4 py-2 bg-[#1a1a1a] border border-[#6e6d6b] rounded-xl hover:bg-[#2a2a2a] transition-all duration-300 transform hover:scale-105 hover:opacity-90 text-[#d4d4d4]"
+                        className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1a1a1a] border border-[#6e6d6b] rounded-xl hover:bg-[#2a2a2a] transition-all duration-300 transform hover:scale-105 hover:opacity-90 text-[#d4d4d4]"
                       >
                         <Edit className="w-4 h-4 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         Editar
@@ -488,8 +577,7 @@ export default function PrazosProcessuaisPage() {
                       
                       <button
                         onClick={() => handleRemovePrazo(prazo.id)}
-                        // Botão de ação secundário (exceção para o vermelho de erro)
-                        className="flex items-center px-4 py-2 bg-[#1a1a1a] border border-[#ef4444] rounded-xl hover:bg-[#2a2a2a] transition-all duration-300 transform hover:scale-105 hover:opacity-90 text-[#ef4444]"
+                        className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1a1a1a] border border-[#ef4444] rounded-xl hover:bg-[#2a2a2a] transition-all duration-300 transform hover:scale-105 hover:opacity-90 text-[#ef4444]"
                       >
                         <Trash2 className="w-4 h-4 mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
                         Remover
@@ -513,21 +601,20 @@ export default function PrazosProcessuaisPage() {
           }}
         >
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-[#b0825a]" style={{ opacity: 0.7, fontSize: '1.2rem' }} /> {/* Ícone dourado */}
+            <FileText className="w-5 h-5 mr-2 text-[#b0825a]" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
             Notas e Observações
           </h3>
           
           <textarea
             value={anotacoes}
             onChange={(e) => setAnotacoes(e.target.value)}
-            className="w-full h-32 p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02] resize-none" // Ajustes de padding, border-radius, bg, border, focus e hover
+            className="w-full h-32 p-4 rounded-xl bg-[rgba(40,40,40,0.8)] border border-[#6e6d6b] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#b0825a] transform transition-all duration-300 focus:scale-[1.02] resize-none"
             placeholder="Digite suas anotações gerais sobre os prazos processuais..."
           />
           
           <div className="flex justify-end mt-4">
             <button
               onClick={handleSaveAnotacoes}
-              // Gradiente Dourado para botões principais
               className="flex items-center px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] text-white transition-all duration-300 transform hover:scale-105 hover:opacity-90 active:scale-95 shadow-xl"
               style={{ boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)' }}
             >
@@ -537,6 +624,28 @@ export default function PrazosProcessuaisPage() {
           </div>
         </div>
       </div>
+
+      {/* CSS para animações customizadas */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 0.1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.2;
+            transform: scale(1.05);
+          }
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animate-pulse {
+          animation: pulse 3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

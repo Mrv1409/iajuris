@@ -8,29 +8,53 @@ import {
   query, 
   where, 
   deleteDoc, 
-  Timestamp, // Importado Timestamp
-  CollectionReference, // Importado para tipagem
-  DocumentData,       // Importado para tipagem
-  Query               // Importado para tipagem
+  Timestamp,
+  CollectionReference,
+  DocumentData,
+  Query,
+  getDoc
 } from 'firebase/firestore'; 
 import { db } from '@/firebase/firestore';
-import { DespesaApiData, FinanceiroDespesas } from '@/types/financeiro'; // Importa as interfaces corretas
+import { DespesaApiData, FinanceiroDespesas } from '@/types/financeiro';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
+
+// Configuração do isolamento híbrido
+const OWNER_EMAIL = 'marvincosta321@gmail.com';
 
 // GET - Buscar despesas
 export async function GET(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    // 📋 PARÂMETROS DA REQUISIÇÃO
     const { searchParams } = new URL(request.url);
     const clienteId = searchParams.get('clienteId');
     const categoria = searchParams.get('categoria');
     const status = searchParams.get('status');
 
-    const despesasRef = collection(db, 'financeiro_despesas'); // Usar const
-    let q: Query<DocumentData> | CollectionReference<DocumentData> = despesasRef; // Tipagem mais específica
+    const despesasRef = collection(db, 'financeiro_despesas');
+    let q: Query<DocumentData> | CollectionReference<DocumentData> = despesasRef;
 
-    // Aplica os filtros 'where' se existirem
-    if (clienteId) {
-      q = query(q, where('clienteId', '==', clienteId));
+    // 🎯 ISOLAMENTO HÍBRIDO - FILTRO PRINCIPAL
+    if (isOwnerMVP) {
+      // Owner vê tudo, mas pode filtrar por cliente específico se solicitado
+      if (clienteId) {
+        q = query(q, where('clienteId', '==', clienteId));
+      }
+    } else {
+      // Usuários normais só veem seus próprios dados
+      q = query(q, where('clienteId', '==', userClientId));
     }
+
+    // Filtros adicionais
     if (categoria) {
       q = query(q, where('categoria', '==', categoria));
     }
@@ -39,22 +63,19 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await getDocs(q);
-    // Mapeia os documentos para a interface FinanceiroDespesas
     const despesas = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })) as FinanceiroDespesas[]; 
+    })) as FinanceiroDespesas[];
 
-    // ORDENAR AS DESPESAS EM MEMÓRIA APÓS FILTRAGEM
-    // Ordena por dataVencimento em ordem decrescente (mais recente primeiro)
+    // Ordenar por dataVencimento em ordem decrescente
     despesas.sort((a, b) => {
-      // Converte Timestamp para Date para comparação
       const dateA = a.dataVencimento.toDate().getTime();
       const dateB = b.dataVencimento.toDate().getTime();
-      return dateB - dateA; 
+      return dateB - dateA;
     });
 
-    // Calcular totais (garantindo que valor seja um número)
+    // Calcular totais
     const totalGeral = despesas.reduce((acc, despesa) => acc + (despesa.valor || 0), 0);
     const totalPendente = despesas.filter(d => d.status === 'pendente').reduce((acc, despesa) => acc + (despesa.valor || 0), 0);
     const totalPago = despesas.filter(d => d.status === 'pago').reduce((acc, despesa) => acc + (despesa.valor || 0), 0);
@@ -73,10 +94,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao buscar despesas:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao buscar despesas',
-        sucesso: false
-      },
+      { error: 'Erro ao buscar despesas', sucesso: false },
       { status: 500 }
     );
   }
@@ -85,26 +103,42 @@ export async function GET(request: NextRequest) {
 // POST - Criar nova despesa
 export async function POST(request: NextRequest) {
   try {
-    const body: DespesaApiData = await request.json(); // Usa DespesaApiData para o corpo da requisição
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
+    const body: DespesaApiData = await request.json();
 
     // Validações básicas
-    if (!body.categoria || !body.descricao || !body.valor || !body.dataVencimento) {
+    if (!body.clienteId || !body.categoria || !body.descricao || !body.valor || !body.dataVencimento) {
       return NextResponse.json(
         { 
-          error: 'Dados obrigatórios faltando (categoria, descrição, valor, dataVencimento)',
+          error: 'Dados obrigatórios faltando: clienteId, categoria, descrição, valor, dataVencimento',
           sucesso: false
         },
         { status: 400 }
       );
     }
 
+    // 🛡️ GUARD DE SEGURANÇA - ISOLAMENTO
+    if (!isOwnerMVP && body.clienteId !== userClientId) {
+      return NextResponse.json(
+        { error: 'Acesso negado: você só pode criar despesas para seu próprio cliente', sucesso: false },
+        { status: 403 }
+      );
+    }
+
     // Cria o objeto FinanceiroDespesas para salvar no Firestore
     const novaDespesa: Omit<FinanceiroDespesas, 'id'> = {
       ...body,
-      // Converte strings de data para objetos Timestamp antes de salvar no Firestore
       dataVencimento: Timestamp.fromDate(new Date(body.dataVencimento)),
       dataPagamento: body.dataPagamento ? Timestamp.fromDate(new Date(body.dataPagamento)) : null,
-      status: body.status || 'pendente', // Garante um status padrão
+      status: body.status || 'pendente',
       createdAt: Timestamp.fromDate(new Date()),
       updatedAt: Timestamp.fromDate(new Date())
     };
@@ -120,10 +154,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao criar despesa:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao criar despesa',
-        sucesso: false
-      },
+      { error: 'Erro ao criar despesa', sucesso: false },
       { status: 500 }
     );
   }
@@ -132,32 +163,56 @@ export async function POST(request: NextRequest) {
 // PUT - Atualizar despesa
 export async function PUT(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const body = await request.json();
-    // Desestrutura o body, separando id e os campos de data que precisam de conversão
     const { id, dataVencimento, dataPagamento, ...restOfDadosAtualizacao } = body as DespesaApiData & { id: string };
 
     if (!id) {
       return NextResponse.json(
-        { 
-          error: 'ID da despesa é obrigatório',
-          sucesso: false
-        },
+        { error: 'ID da despesa é obrigatório', sucesso: false },
         { status: 400 }
       );
     }
 
-    // Cria o objeto com os dados para atualizar, já convertendo as datas
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se a despesa pertence ao usuário
+    if (!isOwnerMVP) {
+      const despesaRef = doc(db, 'financeiro_despesas', id);
+      const despesaDoc = await getDoc(despesaRef);
+      
+      if (!despesaDoc.exists()) {
+        return NextResponse.json(
+          { error: 'Despesa não encontrada', sucesso: false },
+          { status: 404 }
+        );
+      }
+
+      const despesaData = despesaDoc.data() as FinanceiroDespesas;
+      if (despesaData.clienteId !== userClientId) {
+        return NextResponse.json(
+          { error: 'Acesso negado: você só pode atualizar suas próprias despesas', sucesso: false },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Cria o objeto com os dados para atualizar
     const dadosParaAtualizar: Partial<Omit<FinanceiroDespesas, 'id' | 'createdAt'>> = {
-      ...restOfDadosAtualizacao, // Espalha as outras propriedades
-      updatedAt: Timestamp.fromDate(new Date()), // updatedAt já convertido
+      ...restOfDadosAtualizacao,
+      updatedAt: Timestamp.fromDate(new Date()),
     };
 
-    // Converte dataVencimento para Timestamp se existir
     if (dataVencimento) {
       dadosParaAtualizar.dataVencimento = Timestamp.fromDate(new Date(dataVencimento));
     }
 
-    // Converte dataPagamento para Timestamp ou define como null se existir
     if (dataPagamento === '') {
       dadosParaAtualizar.dataPagamento = null;
     } else if (dataPagamento) {
@@ -174,10 +229,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao atualizar despesa:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao atualizar despesa',
-        sucesso: false
-      },
+      { error: 'Erro ao atualizar despesa', sucesso: false },
       { status: 500 }
     );
   }
@@ -186,17 +238,44 @@ export async function PUT(request: NextRequest) {
 // DELETE - Deletar despesa
 export async function DELETE(request: NextRequest) {
   try {
+    // 🔐 AUTENTICAÇÃO E ISOLAMENTO
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado', sucesso: false }, { status: 401 });
+    }
+
+    const isOwnerMVP = session.user.email === OWNER_EMAIL;
+    const userClientId = isOwnerMVP ? OWNER_EMAIL : session.user.id;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json(
-        { 
-          error: 'ID da despesa é obrigatório',
-          sucesso: false
-        },
+        { error: 'ID da despesa é obrigatório', sucesso: false },
         { status: 400 }
       );
+    }
+
+    // 🛡️ GUARD DE SEGURANÇA - Verificar se a despesa pertence ao usuário
+    if (!isOwnerMVP) {
+      const despesaRef = doc(db, 'financeiro_despesas', id);
+      const despesaDoc = await getDoc(despesaRef);
+      
+      if (!despesaDoc.exists()) {
+        return NextResponse.json(
+          { error: 'Despesa não encontrada', sucesso: false },
+          { status: 404 }
+        );
+      }
+
+      const despesaData = despesaDoc.data() as FinanceiroDespesas;
+      if (despesaData.clienteId !== userClientId) {
+        return NextResponse.json(
+          { error: 'Acesso negado: você só pode deletar suas próprias despesas', sucesso: false },
+          { status: 403 }
+        );
+      }
     }
 
     await deleteDoc(doc(db, 'financeiro_despesas', id));
@@ -209,10 +288,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao deletar despesa:', error);
     return NextResponse.json(
-      { 
-        error: 'Erro ao deletar despesa',
-        sucesso: false
-      },
+      { error: 'Erro ao deletar despesa', sucesso: false },
       { status: 500 }
     );
   }

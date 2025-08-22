@@ -2,10 +2,15 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowLeft, FileText, Send, Loader2, Copy } from 'lucide-react'; // Ícones para a página
-import { toast } from 'react-hot-toast'; // Para notificações (precisará instalar)
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, FileText, Send, Loader2, Copy, Save, History } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { salvarPeticao } from '@/lib/firebase-peticoes';
 
 export default function PeticoesPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [tipoDocumento, setTipoDocumento] = useState('');
   const [areaJuridica, setAreaJuridica] = useState('');
   const [descricaoCase, setDescricaoCase] = useState('');
@@ -16,12 +21,26 @@ export default function PeticoesPage() {
   const [documentoGerado, setDocumentoGerado] = useState('');
   const [loading, setLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [documentoSalvo, setDocumentoSalvo] = useState(false);
+
+  // ✅ ISOLAMENTO HÍBRIDO MVP/SaaS - PADRÃO REPLICADO
+  const OWNER_EMAIL = 'marvincosta321@gmail.com';
+  const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
+  const advogadoId = isOwnerMVP ? OWNER_EMAIL : session?.user?.id;
 
   // Função para lidar com a geração da petição
   const handleGeneratePetition = async () => {
+    // ✅ GUARD DE SEGURANÇA CORRIGIDO - Inclui caso MVP
+    if (!session?.user?.id && !isOwnerMVP) {
+      toast.error('Sessão inválida. Redirecionando...');
+      router.push('/auth/advogado/signin');
+      return;
+    }
+
     setLoading(true);
-    setDocumentoGerado(''); // Limpa o documento anterior
-    setCopySuccess(false); // Reseta o status de cópia
+    setDocumentoGerado('');
+    setCopySuccess(false);
+    setDocumentoSalvo(false);
 
     try {
       const response = await fetch('/api/groq-petitions', {
@@ -44,14 +63,31 @@ export default function PeticoesPage() {
 
       if (response.ok && data.sucesso) {
         setDocumentoGerado(data.resposta);
-        toast.success('Documento gerado com sucesso!'); // Notificação de sucesso
+        toast.success('Documento gerado com sucesso!');
+        
+        // ✅ SAVE AUTOMÁTICO NO FIREBASE - COM ISOLAMENTO HÍBRIDO CORRETO
+        try {
+          await salvarPeticao({
+            advogadoId: String(advogadoId), // ✅ CORRIGIDO: Usa advogadoId híbrido
+            tipoDocumento,
+            conteudo: data.resposta,
+            descricaoCase,
+            dadosCliente,
+            provedorIA: 'groq'
+          });
+          setDocumentoSalvo(true);
+          toast.success('📄 Documento salvo automaticamente!');
+        } catch (saveError) {
+          console.error('Erro ao salvar:', saveError);
+          toast.error('Documento gerado, mas não foi possível salvar. Tente copiar manualmente.');
+        }
       } else {
-        toast.error(data.resposta || 'Erro ao gerar documento. Tente novamente.'); // Notificação de erro
+        toast.error(data.resposta || 'Erro ao gerar documento. Tente novamente.');
         console.error('Erro na resposta da API:', data.error);
       }
     } catch (error) {
       console.error('Erro ao chamar a API:', error);
-      toast.error('Erro de conexão. Verifique sua internet e tente novamente.'); // Notificação de erro de conexão
+      toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +95,6 @@ export default function PeticoesPage() {
 
   // Função para copiar o documento gerado
   const copyDocument = () => {
-    // Usando document.execCommand para compatibilidade em iframes
     const textarea = document.createElement('textarea');
     textarea.value = documentoGerado;
     document.body.appendChild(textarea);
@@ -101,18 +136,35 @@ export default function PeticoesPage() {
                 Gere rascunhos de petições, e-mails e documentos com a inteligência artificial do IAJURIS.
               </p>
             </div>
-            <Link 
-              href="/dashboard"
-              className="group flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-              style={{ 
-                background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)',
-                boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)',
-                color: '#ffffff'
-              }}
-            >
-              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-              Voltar ao Dashboard
-            </Link>
+            <div className="flex gap-3">
+              {/* Botão Ver Histórico */}
+              <Link 
+                href="/dashboard/documentos"
+                className="group flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg border"
+                style={{ 
+                  backgroundColor: 'rgba(176, 130, 90, 0.1)',
+                  borderColor: 'rgba(176, 130, 90, 0.3)',
+                  color: '#b0825a'
+                }}
+              >
+                <History className="w-4 h-4" />
+                Histórico
+              </Link>
+              
+              {/* Botão Voltar */}
+              <Link 
+                href="/dashboard/leads/advogado"
+                className="group flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                style={{ 
+                  background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)',
+                  boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)',
+                  color: '#ffffff'
+                }}
+              >
+                <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                Voltar ao Dashboard
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -289,9 +341,17 @@ export default function PeticoesPage() {
                 borderColor: 'rgba(176, 130, 90, 0.2)',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
               }}>
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Documento Gerado pela IA
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-white">
+                  Documento Gerado pela IA
+                </h2>
+                {documentoSalvo && (
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-600/20 border border-green-600/30">
+                    <Save className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-green-400 font-medium">Salvo</span>
+                  </div>
+                )}
+              </div>
               
               <div className="relative">
                 <textarea
@@ -319,7 +379,7 @@ export default function PeticoesPage() {
         </div>
       </div>
 
-      {/* CSS para animações customizadas (se necessário, pode ser movido para um global.css) */}
+      {/* CSS para animações customizadas */}
       <style jsx>{`
         @keyframes pulse {
           0%,
@@ -335,12 +395,6 @@ export default function PeticoesPage() {
 
         .animation-delay-1000 {
           animation-delay: 1s;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-3000 {
-          animation-delay: 3s;
         }
         .animate-pulse {
           animation: pulse 3s ease-in-out infinite;
