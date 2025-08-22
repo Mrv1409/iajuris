@@ -121,7 +121,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
           </h3>
           
           <div className="space-y-3">
-            {SUBSCRIPTION_CONFIG.features.map((feature, index) => (
+            {SUBSCRIPTION_CONFIG.plans.basico.features.map((feature, index) => (
               <div key={index} className="flex items-start space-x-3">
                 <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-700">{feature}</span>
