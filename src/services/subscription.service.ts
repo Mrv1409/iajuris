@@ -1,6 +1,6 @@
 // src/services/subscription.service.ts
-import { db } from '@/firebase/firestore';//eslint-disable-next-line
-import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { db } from '@/firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { stripe, SUBSCRIPTION_CONFIG } from '@/lib/stripe.config';
 
 export interface AdvogadoSubscription {
@@ -96,7 +96,7 @@ export class SubscriptionService {
         payment_method_types: ['card'],
         line_items: [
           {
-            price: SUBSCRIPTION_CONFIG.planId,
+            price: SUBSCRIPTION_CONFIG.plans.basico.priceId,
             quantity: 1,
           },
         ],
