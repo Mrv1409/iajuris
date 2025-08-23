@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
-
+    //comentario pra testar o deploy
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">
       <div className="text-center max-w-md px-6">
