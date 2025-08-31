@@ -43,24 +43,64 @@ export async function POST(request: NextRequest) {
         // Buscar a subscription criada
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         
+        // Determinar o plano baseado no price_id
+        const priceId = subscription.items.data[0].price.id;
+        let planoAtual: 'profissional' | 'escritorio' = 'profissional';
+
+        // Usar os price_ids corretos
+        if (priceId === 'price_1RzQggDFq6ALe0I1LXKaaGLE') {
+          planoAtual = 'escritorio'; // R$ 297
+        } else if (priceId === 'price_1S0mgDDFq6ALe0I1KlKC1mrD') {
+          planoAtual = 'profissional'; // R$ 247
+        }
+
+        // Usar método do SubscriptionService para obter limites
+        const limites = SubscriptionService.getLimitesPlano(planoAtual);
+
         await SubscriptionService.updateSubscriptionData(advogadoId, {
-          status: 'active',
-          stripeCustomerId: session.customer as string,
-          stripeSubscriptionId: subscription.id,
-          planId: subscription.items.data[0].price.id,
+          statusAssinatura: 'active',
+          clienteStripeId: session.customer as string,
+          assinaturaId: subscription.id,
+          planoAtual: planoAtual,
+          statusPagamento: 'paid',//eslint-disable-next-line
+          dataFimAssinatura: new Date((subscription as any).current_period_end * 1000).toISOString(),
+          limites: limites,
+          usoMensal: {
+            consultasIA: 0,
+            pdfProcessados: 0,
+            dataReset: new Date().toISOString()
+          },
           cancelAtPeriodEnd: false,
-          updatedAt: Timestamp.now(), // Usando Timestamp do Firebase
+          updatedAt: Timestamp.now(),
         });
 
-        console.log('Assinatura ativada para:', advogadoId);
+        console.log('Assinatura ativada para:', advogadoId, 'Plano:', planoAtual);
+        break;
+      }
+
+      case 'customer.subscription.created': {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        if (subscription.metadata?.advogadoId) {
+          // Se estiver em trial, marcar como trialing
+          const status = subscription.status === 'trialing' ? 'trialing' : 'active';
+          
+          await SubscriptionService.updateSubscriptionData(subscription.metadata.advogadoId, {
+            statusAssinatura: status,
+            assinaturaId: subscription.id,
+            dataFimTrial: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            updatedAt: Timestamp.now(),
+          });
+          
+          console.log('Subscription criada para:', subscription.metadata.advogadoId, 'Status:', status);
+        }
         break;
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        
         //eslint-disable-next-line
-        const subscriptionId = (invoice as any)['subscription'];
+        const subscriptionId = (invoice as any).subscription as string;
         
         if (!subscriptionId) {
           console.error('Subscription não encontrada na invoice');
@@ -71,7 +111,9 @@ export async function POST(request: NextRequest) {
         
         if (subscription.metadata?.advogadoId) {
           await SubscriptionService.updateSubscriptionData(subscription.metadata.advogadoId, {
-            status: 'active',
+            statusAssinatura: 'active',
+            statusPagamento: 'paid',//eslint-disable-next-line
+            dataFimAssinatura: new Date((subscription as any).current_period_end * 1000).toISOString(),
             updatedAt: Timestamp.now(),
           });
           
@@ -82,9 +124,8 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        
         //eslint-disable-next-line
-        const subscriptionId = (invoice as any)['subscription'];
+        const subscriptionId = (invoice as any).subscription as string;
         
         if (!subscriptionId) {
           console.error('Subscription não encontrada na invoice');
@@ -95,7 +136,8 @@ export async function POST(request: NextRequest) {
         
         if (subscription.metadata?.advogadoId) {
           await SubscriptionService.updateSubscriptionData(subscription.metadata.advogadoId, {
-            status: 'past_due',
+            statusAssinatura: 'past_due',
+            statusPagamento: 'failed',
             updatedAt: Timestamp.now(),
           });
           
@@ -108,35 +150,38 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         
         if (subscription.metadata?.advogadoId) {
-          let status: 'active' | 'inactive' | 'canceled' | 'past_due' = 'active';
+          let statusAssinatura: 'active' | 'inactive' | 'canceled' | 'past_due' | 'trialing' = 'active';
           
           switch (subscription.status) {
             case 'canceled':
-              status = 'canceled';
+              statusAssinatura = 'canceled';
               break;
             case 'past_due':
-              status = 'past_due';
+              statusAssinatura = 'past_due';
               break;
             case 'incomplete':
             case 'incomplete_expired':
             case 'unpaid':
-              status = 'inactive';
+              statusAssinatura = 'inactive';
+              break;
+            case 'trialing':
+              statusAssinatura = 'trialing';
               break;
             case 'active':
-            case 'trialing':
-              status = 'active';
+              statusAssinatura = 'active';
               break;
             default:
-              status = 'inactive';
+              statusAssinatura = 'inactive';
           }
 
           await SubscriptionService.updateSubscriptionData(subscription.metadata.advogadoId, {
-            status,
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            statusAssinatura: statusAssinatura,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,//eslint-disable-next-line
+            dataFimAssinatura: new Date((subscription as any).current_period_end * 1000).toISOString(),
             updatedAt: Timestamp.now(),
           });
           
-          console.log('Subscription atualizada para:', subscription.metadata.advogadoId, 'Status:', status);
+          console.log('Subscription atualizada para:', subscription.metadata.advogadoId, 'Status:', statusAssinatura);
         }
         break;
       }
@@ -146,7 +191,8 @@ export async function POST(request: NextRequest) {
         
         if (subscription.metadata?.advogadoId) {
           await SubscriptionService.updateSubscriptionData(subscription.metadata.advogadoId, {
-            status: 'canceled',
+            statusAssinatura: 'canceled',
+            statusPagamento: 'canceled',
             updatedAt: Timestamp.now(),
           });
           

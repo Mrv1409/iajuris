@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';
 import type { AdvogadoData } from '@/types/advogado';
+import { TokenMiddleware, TokenEstimator } from '@/middleware/token.middleware';
 
 // Configuração para a API da Groq
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -57,7 +58,7 @@ function generateAdvogadoPrompt(advogadoData: AdvogadoData): string {
   const experienciaTexto = advogadoData.experiencia || "vasta experiência";
   const localizacaoTexto = `${advogadoData.cidade}, ${advogadoData.estado}`;
   
-  return `Você é uma assistente de inteligência artificial do escritório de ${advogadoData.nome}, um(a) advogado(a) renomado(a) especializado(a) em direito brasileiro e atuante em ${localizacaoTexto}.
+  return `Você é a assistente de inteligência artificial do escritório de ${advogadoData.nome}, um(a) advogado(a) renomado(a) especializado(a) em direito brasileiro e atuante em ${localizacaoTexto}.
 
 IMPORTANTE - INSTRUÇÕES ESPECÍFICAS:
 1. Se esta for a primeira interação (isInicial=true), você DEVE começar sua resposta EXATAMENTE com esta estrutura:
@@ -67,14 +68,20 @@ IMPORTANTE - INSTRUÇÕES ESPECÍFICAS:
    - SIMPLES e ACESSÍVEL, sem juridiquês
    - EMPÁTICA e ACOLHEDORA
    - CLARA, como se explicasse para um amigo
-   - Como se fosse a própria assistente de ${advogadoData.nome}
+   - SEMPRE como assistente/secretária de ${advogadoData.nome}
 
-3. SEMPRE termine perguntando se gostaria de:
+3. SEMPRE mantenha TERCEIRA PESSOA:
+   - ✅ "${advogadoData.nome} tem experiência em..."
+   - ✅ "Nosso escritório pode ajudar..."  
+   - ✅ "${advogadoData.nome} costuma orientar que..."
+   - ❌ NUNCA diga "Eu tenho", "Eu posso", "Eu sou"
+
+4. SEMPRE termine perguntando se gostaria de:
    - Agendar uma consulta presencial com ${advogadoData.nome}
    - Falar diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}
    - Receber mais informações sobre ${especialidadesTexto}
 
-4. Para interações subsequentes, mantenha o tom acolhedor mas sem repetir a introdução promocional.
+5. Para interações subsequentes, mantenha o tom acolhedor mas sem repetir a introdução promocional.
 
 DADOS DO PROFISSIONAL:
 - Nome: ${advogadoData.nome}
@@ -84,7 +91,7 @@ DADOS DO PROFISSIONAL:
 - Contato: ${advogadoData.telefone}
 - Biografia: ${advogadoData.biografia || 'Profissional dedicado ao direito'}
 
-Responda sempre como a assistente pessoal de ${advogadoData.nome}, promovendo seus serviços de forma natural e acolhedora.`;
+Responda sempre como a assistente pessoal de ${advogadoData.nome}, promovendo os serviços dele(a) de forma natural e acolhedora, NUNCA falando em primeira pessoa sobre conhecimento jurídico.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -142,6 +149,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - VERIFICAÇÃO PRÉVIA
+    const advogadoId = advogadoData.id!;
+    const tokenCheck = await TokenMiddleware.checkTokens(advogadoId, 'CHAT_PUBLIC');
+    
+    if (!tokenCheck.success) {
+      console.log('Limite de tokens excedido:', tokenCheck.error);
+      
+      // Resposta específica baseada no tipo de limite
+      let errorMessage = '';
+      if (tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE') {
+        errorMessage = 'Recebemos sua mensagem, entraremos em contato !!!';
+      } else if (tokenCheck.error.code === 'DAILY_LIMIT') {
+        errorMessage = `Limite diário de consultas atingido. Tente novamente amanhã ou entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+      } else if (tokenCheck.error.code === 'MINUTE_LIMIT') {
+        errorMessage = `Muitas consultas em pouco tempo. Aguarde alguns minutos ou fale diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+      } else {
+        errorMessage = `Consulta indisponível no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+      }
+
+      const status = tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE' ? 402 : 429;
+      const response = NextResponse.json(
+        { 
+          error: tokenCheck.error.error,
+          resposta: errorMessage,
+          code: tokenCheck.error.code
+        },
+        { status }
+      );
+
+      // Headers informativos para rate limiting
+      if (tokenCheck.error.limits) {
+        response.headers.set('X-RateLimit-Daily-Limit', tokenCheck.error.limits.dailyLimit.toString());
+        response.headers.set('X-RateLimit-Daily-Remaining', Math.max(0, tokenCheck.error.limits.dailyLimit - tokenCheck.error.limits.dailyUsed).toString());
+        response.headers.set('X-RateLimit-Minute-Limit', tokenCheck.error.limits.minuteLimit.toString());
+        response.headers.set('X-RateLimit-Minute-Remaining', Math.max(0, tokenCheck.error.limits.minuteLimit - tokenCheck.error.limits.minuteUsed).toString());
+      }
+      
+      if (tokenCheck.error.retryAfter) {
+        response.headers.set('Retry-After', tokenCheck.error.retryAfter.toString());
+      }
+
+      return response;
+    }
+
     // Gerar prompt personalizado (modelo MVP com dados do Firebase)
     const systemPrompt = generateAdvogadoPrompt(advogadoData);
     const userTreatment = getUserTreatment(clienteNome);
@@ -179,11 +230,14 @@ export async function POST(request: NextRequest) {
       stream: false
     };
 
+    // Estimar tokens do prompt para logs
+    const promptTokens = TokenEstimator.estimateTokens(systemPrompt + userPrompt);
     console.log('Enviando requisição para Groq (SaaS):', { 
       advogadoSlug,
       advogadoNome: advogadoData.nome,
       isInicial,
-      clienteNome: userTreatment
+      clienteNome: userTreatment,
+      estimatedPromptTokens: promptTokens
     });
 
     // Requisição para a API da Groq
@@ -231,6 +285,26 @@ export async function POST(request: NextRequest) {
 
     const respostaIA = data.choices?.[0]?.message?.content || 
       `Desculpe, não consegui processar sua solicitação no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+
+    // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - INCREMENTO APÓS SUCESSO
+    try {
+      // Calcular tokens reais usados (prompt + resposta)
+      const responseTokens = TokenEstimator.estimateTokens(respostaIA);
+      const totalTokensUsed = promptTokens + responseTokens;
+      
+      // Registrar uso real de tokens
+      await TokenMiddleware.incrementTokens(advogadoId, totalTokensUsed);
+      
+      console.log('Tokens registrados:', {
+        advogadoId,
+        promptTokens,
+        responseTokens,
+        totalTokensUsed
+      });
+    } catch (tokenError) {
+      // Log do erro mas não falha a resposta
+      console.error('Erro ao registrar tokens:', tokenError);
+    }
 
     console.log('Resposta SaaS enviada com sucesso');
     return NextResponse.json({

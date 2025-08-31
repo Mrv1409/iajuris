@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { TokenMiddleware, TokenEstimator } from '@/middleware/token.middleware';
 
 // Configuração para a API da Groq
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -128,7 +129,8 @@ export async function POST(request: NextRequest) {
       dadosCliente, 
       dadosAdversario, 
       observacoes,
-      instrucoes 
+      instrucoes,
+      advogadoId // ✅ Novo campo obrigatório para sistema de tokens
     } = body;
 
     // Validação dos dados obrigatórios
@@ -140,6 +142,60 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // ✅ Validação do advogadoId para sistema de tokens
+    if (!advogadoId) {
+      return NextResponse.json(
+        { 
+          error: 'ID do advogado não informado',
+          resposta: 'Identificação do usuário é necessária para utilizar o serviço.'
+        },
+        { status: 400 }
+      );
+    }
+
+    // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - VERIFICAÇÃO PRÉVIA
+    const tokenCheck = await TokenMiddleware.checkTokens(advogadoId, 'DOC_GENERATION');
+    
+    if (!tokenCheck.success) {
+      console.log('Limite de tokens excedido:', tokenCheck.error);
+      
+      // Resposta específica baseada no tipo de limite
+      let errorMessage = '';
+      if (tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE') {
+        errorMessage = 'Serviço temporariamente indisponível. Nossa equipe entrará em contato em breve.';
+      } else if (tokenCheck.error.code === 'DAILY_LIMIT') {
+        errorMessage = 'Limite diário de geração de documentos atingido. Tente novamente amanhã.';
+      } else if (tokenCheck.error.code === 'MINUTE_LIMIT') {
+        errorMessage = 'Muitas solicitações em pouco tempo. Aguarde alguns minutos e tente novamente.';
+      } else {
+        errorMessage = 'Serviço temporariamente indisponível. Tente novamente mais tarde.';
+      }
+
+      const status = tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE' ? 402 : 429;
+      const response = NextResponse.json(
+        { 
+          error: tokenCheck.error.error,
+          resposta: errorMessage,
+          code: tokenCheck.error.code
+        },
+        { status }
+      );
+
+      // Headers informativos para rate limiting
+      if (tokenCheck.error.limits) {
+        response.headers.set('X-RateLimit-Daily-Limit', tokenCheck.error.limits.dailyLimit.toString());
+        response.headers.set('X-RateLimit-Daily-Remaining', Math.max(0, tokenCheck.error.limits.dailyLimit - tokenCheck.error.limits.dailyUsed).toString());
+        response.headers.set('X-RateLimit-Minute-Limit', tokenCheck.error.limits.minuteLimit.toString());
+        response.headers.set('X-RateLimit-Minute-Remaining', Math.max(0, tokenCheck.error.limits.minuteLimit - tokenCheck.error.limits.minuteUsed).toString());
+      }
+      
+      if (tokenCheck.error.retryAfter) {
+        response.headers.set('Retry-After', tokenCheck.error.retryAfter.toString());
+      }
+
+      return response;
     }
 
     // Identificação automática se não fornecida
@@ -204,9 +260,9 @@ ${instrucoes}`;
 
     userPrompt += `\n\nGere um documento jurídico completo, tecnicamente correto e profissional seguindo as melhores práticas jurídicas brasileiras.`;
 
-    // Configuração da requisição para a API da Groq com modelo Qwen
+    // Configuração da requisição para a API da Groq
     const requestBody = {
-      model: 'llama3-8b-8192', // Modelo Qwen para documentos técnicos
+      model: 'llama3-8b-8192', // Modelo para documentos técnicos
       messages: [
         {
           role: 'system',
@@ -223,12 +279,16 @@ ${instrucoes}`;
       stream: false
     };
 
+    // Estimar tokens do prompt para logs
+    const promptTokens = TokenEstimator.estimateTokens(systemPrompt + userPrompt);
     console.log('Enviando requisição para Groq (Petições):', { 
       url: GROQ_API_URL, 
       hasApiKey: !!GROQ_API_KEY,
       documentType: finalDocumentType,
       legalArea: finalLegalArea,
-      model: 'llama3-8b-8192'
+      model: 'llama3-8b-8192',
+      advogadoId,
+      estimatedPromptTokens: promptTokens
     });
 
     // Requisição para a API da Groq
@@ -275,6 +335,27 @@ ${instrucoes}`;
     }
 
     const documentoGerado = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar o documento no momento. Tente novamente.';
+
+    // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - INCREMENTO APÓS SUCESSO
+    try {
+      // Calcular tokens reais usados (prompt + resposta)
+      const responseTokens = TokenEstimator.estimateTokens(documentoGerado);
+      const totalTokensUsed = promptTokens + responseTokens;
+      
+      // Registrar uso real de tokens
+      await TokenMiddleware.incrementTokens(advogadoId, totalTokensUsed);
+      
+      console.log('Tokens registrados:', {
+        advogadoId,
+        documentType: finalDocumentType,
+        promptTokens,
+        responseTokens,
+        totalTokensUsed
+      });
+    } catch (tokenError) {
+      // Log do erro mas não falha a resposta
+      console.error('Erro ao registrar tokens:', tokenError);
+    }
 
     console.log('Documento jurídico gerado com sucesso');
     return NextResponse.json({

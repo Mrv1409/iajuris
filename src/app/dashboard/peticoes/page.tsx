@@ -56,6 +56,7 @@ export default function PeticoesPage() {
           dadosAdversario,
           observacoes,
           instrucoes,
+          advogadoId, // ✅ CORRIGIDO: Adicionado advogadoId no body da requisição
         }),
       });
 

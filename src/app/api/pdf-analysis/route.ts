@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pdfParse from 'pdf-parse';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/firestore'; // USANDO SUA CONFIGURAÇÃO EXISTENTE
+import { TokenMiddleware, TokenEstimator } from '@/middleware/token.middleware';
 
 // Configuração para a API da Groq
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -227,6 +228,8 @@ export async function POST(request: NextRequest) {
         const file = formData.get('file') as File;
         const analysisType = formData.get('analysisType') as string || 'completa';
         const clientId = formData.get('clientId') as string;
+        // ✅ Novo campo para sistema de tokens (compatibilidade com clientId existente)
+        const advogadoId = formData.get('advogadoId') as string || clientId;
 
         if (!file) {
             return NextResponse.json(
@@ -249,6 +252,62 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // ✅ Validação do advogadoId para sistema de tokens
+        if (!advogadoId) {
+            return NextResponse.json(
+                {
+                    error: 'ID do advogado não informado',
+                    resposta: 'Identificação do usuário é necessária para utilizar o serviço.',
+                    sucesso: false
+                },
+                { status: 400 }
+            );
+        }
+
+        // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - VERIFICAÇÃO PRÉVIA
+        const tokenCheck = await TokenMiddleware.checkTokens(advogadoId, 'PDF_ANALYSIS');
+        
+        if (!tokenCheck.success) {
+            console.log('Limite de tokens excedido:', tokenCheck.error);
+            
+            // Resposta específica baseada no tipo de limite
+            let errorMessage = '';
+            if (tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE') {
+                errorMessage = 'Serviço de análise temporariamente indisponível. Nossa equipe entrará em contato em breve.';
+            } else if (tokenCheck.error.code === 'DAILY_LIMIT') {
+                errorMessage = 'Limite diário de análises de PDF atingido. Tente novamente amanhã.';
+            } else if (tokenCheck.error.code === 'MINUTE_LIMIT') {
+                errorMessage = 'Muitas análises em pouco tempo. Aguarde alguns minutos e tente novamente.';
+            } else {
+                errorMessage = 'Serviço de análise temporariamente indisponível. Tente novamente mais tarde.';
+            }
+
+            const status = tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE' ? 402 : 429;
+            const response = NextResponse.json(
+                {
+                    error: tokenCheck.error.error,
+                    resposta: errorMessage,
+                    code: tokenCheck.error.code,
+                    sucesso: false
+                },
+                { status }
+            );
+
+            // Headers informativos para rate limiting
+            if (tokenCheck.error.limits) {
+                response.headers.set('X-RateLimit-Daily-Limit', tokenCheck.error.limits.dailyLimit.toString());
+                response.headers.set('X-RateLimit-Daily-Remaining', Math.max(0, tokenCheck.error.limits.dailyLimit - tokenCheck.error.limits.dailyUsed).toString());
+                response.headers.set('X-RateLimit-Minute-Limit', tokenCheck.error.limits.minuteLimit.toString());
+                response.headers.set('X-RateLimit-Minute-Remaining', Math.max(0, tokenCheck.error.limits.minuteLimit - tokenCheck.error.limits.minuteUsed).toString());
+            }
+            
+            if (tokenCheck.error.retryAfter) {
+                response.headers.set('Retry-After', tokenCheck.error.retryAfter.toString());
+            }
+
+            return response;
+        }
         
         // Processamento do arquivo em memória, sem escrever no disco
         const bytes = await file.arrayBuffer();
@@ -269,7 +328,17 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            console.log('Analisando com IA...');
+            // Estimar tokens do prompt para logs
+            const promptTokens = TokenEstimator.estimateTokens(extractedText);
+            console.log('Analisando com IA...', {
+                fileName: file.name,
+                fileSize: file.size,
+                textLength: extractedText.length,
+                analysisType,
+                advogadoId,
+                estimatedPromptTokens: promptTokens
+            });
+            
             const analysis = await analyzeWithGroq(extractedText, analysisType);
 
             console.log('Salvando análise no Firestore...');
@@ -289,6 +358,28 @@ export async function POST(request: NextRequest) {
             };
 
             const documentId = await saveAnalysisToFirestore(analysisData);
+
+            // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - INCREMENTO APÓS SUCESSO
+            try {
+                // Calcular tokens reais usados (prompt + resposta)
+                const responseTokens = TokenEstimator.estimateTokens(analysis);
+                const totalTokensUsed = promptTokens + responseTokens;
+                
+                // Registrar uso real de tokens
+                await TokenMiddleware.incrementTokens(advogadoId, totalTokensUsed);
+                
+                console.log('Tokens registrados:', {
+                    advogadoId,
+                    fileName: file.name,
+                    analysisType,
+                    promptTokens,
+                    responseTokens,
+                    totalTokensUsed
+                });
+            } catch (tokenError) {
+                // Log do erro mas não falha a resposta
+                console.error('Erro ao registrar tokens:', tokenError);
+            }
 
             console.log('Análise de PDF concluída com sucesso');
             // Retorna o documentId para que o cliente possa gerenciar o histórico

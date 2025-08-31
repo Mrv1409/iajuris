@@ -5,7 +5,36 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { AdvogadoSubscription } from '@/services/subscription.service';
 
+// 🆕 NOVAS INTERFACES PARA LIMITAÇÕES
+interface PlanLimitations {
+  // IA Configuration
+  iaProvider: 'groq' | 'chatgpt';
+  
+  // Access Limits
+  maxEmails: number;
+  
+  // Features Access
+  canAccessFinancial: boolean;
+  canAccessClients: boolean;
+  canAccessCalculator: boolean;
+  canAccessDeadlines: boolean;
+  canAccessProfessional: boolean;
+  canAccessDocGeneration: boolean;
+  canAccessPdfAnalysis: boolean;
+  
+  // Customization
+  canCustomizeColors: boolean;
+  canCustomizeLogo: boolean;
+  canCustomizeImage: boolean;
+  
+  // Usage Limits
+  monthlyIAQueries: number;
+  monthlyPdfProcessing: number;
+  simultaneousLogins: number;
+}
+
 interface UseSubscriptionReturn {
+  // ✅ MANTIDOS (já existiam)
   isActive: boolean;
   subscription: AdvogadoSubscription | null;
   isLoading: boolean;
@@ -13,17 +42,108 @@ interface UseSubscriptionReturn {
   refetch: () => Promise<void>;
   openPaymentModal: () => void;
   openCustomerPortal: () => Promise<void>;
+  
+  // 🆕 NOVOS - LIMITAÇÕES POR PLANO
+  planType: 'profissional' | 'escritorio' | null;
+  limitations: PlanLimitations;
+  currentUsage: {
+    iaQueries: number;
+    pdfProcessed: number;
+  };
+  
+  // 🆕 NOVOS - MÉTODOS UTILITÁRIOS
+  canUseFeature: (feature: keyof PlanLimitations) => boolean;
+  hasReachedLimit: (type: 'consultasIA' | 'pdfProcessados') => boolean;
+  getRemainingUsage: (type: 'consultasIA' | 'pdfProcessados') => number;
 }
+
+// 🆕 LIMITAÇÕES POR PLANO
+const PLAN_LIMITATIONS: Record<'profissional' | 'escritorio', PlanLimitations> = {
+  profissional: {
+    // IA: Groq
+    iaProvider: 'groq',
+    
+    // Access: 1 email
+    maxEmails: 1,
+    
+    
+    canAccessFinancial: true,
+    canAccessClients: true,
+    canAccessCalculator: true,
+    canAccessDeadlines: true,
+    canAccessProfessional: true,
+    canAccessDocGeneration: true,
+    canAccessPdfAnalysis: true,
+    
+  
+    canCustomizeColors: true,
+    canCustomizeLogo: false,
+    canCustomizeImage: true,
+    
+    // Usage Limits
+    monthlyIAQueries: 500,
+    monthlyPdfProcessing: 50,
+    simultaneousLogins: 1,
+  },
+  escritorio: {
+    // IA: ChatGPT
+    iaProvider: 'chatgpt',
+    
+    // Access: 3 emails
+    maxEmails: 3,
+    
+    // Features: COM Gestão Financeira - TUDO LIBERADO
+    canAccessFinancial: true,
+    canAccessClients: true,
+    canAccessCalculator: true,
+    canAccessDeadlines: true,
+    canAccessProfessional: true,
+    canAccessDocGeneration: true,
+    canAccessPdfAnalysis: true,
+    
+    // Customization: cores + logo + imagem
+    canCustomizeColors: true,
+    canCustomizeLogo: true,
+    canCustomizeImage: true,
+    
+    // Usage Limits
+    monthlyIAQueries: 1500,
+    monthlyPdfProcessing: 150,
+    simultaneousLogins: 3,
+  },
+};
+
+// 🆕 LIMITAÇÕES PADRÃO (sem assinatura ativa)
+const DEFAULT_LIMITATIONS: PlanLimitations = {
+  iaProvider: 'groq',
+  maxEmails: 1,
+  canAccessFinancial: false,
+  canAccessClients: false,
+  canAccessCalculator: false,
+  canAccessDeadlines: false,
+  canAccessProfessional: false,
+  canAccessDocGeneration: false,
+  canAccessPdfAnalysis: false,
+  canCustomizeColors: false,
+  canCustomizeLogo: false,
+  canCustomizeImage: false,
+  monthlyIAQueries: 0,
+  monthlyPdfProcessing: 0,
+  simultaneousLogins: 1,
+};
 
 export function useSubscription(): UseSubscriptionReturn {
   const { data: session, status } = useSession();
+  
+  // ✅ ESTADOS EXISTENTES (mantidos)
   const [isActive, setIsActive] = useState(false);
   const [subscription, setSubscription] = useState<AdvogadoSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);//eslint-disable-next-line
+  const [error, setError] = useState<string | null>(null);
+  //eslint-disable-next-line
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Função para buscar status da assinatura
+  // ✅ FUNÇÃO EXISTENTE (mantida, só corrigir método)
   const fetchSubscriptionStatus = useCallback(async () => {
     if (status === 'loading' || !session?.user?.id) {
       return;
@@ -33,11 +153,15 @@ export function useSubscription(): UseSubscriptionReturn {
       setError(null);
       setIsLoading(true);
 
+      // 🔧 CORRIGIR: usar POST e enviar userId
       const response = await fetch('/api/subscription/status', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          userId: session.user.id
+        }),
       });
 
       if (!response.ok) {
@@ -59,22 +183,20 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, [session?.user?.id, status]);
 
-  // Buscar status quando o componente monta ou sessão muda
+  // ✅ EFFECT EXISTENTE (mantido)
   useEffect(() => {
     fetchSubscriptionStatus();
   }, [fetchSubscriptionStatus]);
 
-  // Função para refetch manual
+  // ✅ FUNÇÕES EXISTENTES (mantidas)
   const refetch = useCallback(async () => {
     await fetchSubscriptionStatus();
   }, [fetchSubscriptionStatus]);
 
-  // Abrir modal de pagamento
   const openPaymentModal = useCallback(() => {
     setShowPaymentModal(true);
   }, []);
 
-  // Criar checkout session e redirecionar
   const createCheckoutSession = useCallback(async () => {
     if (!session?.user) {
       setError('Usuário não autenticado');
@@ -107,7 +229,6 @@ export function useSubscription(): UseSubscriptionReturn {
 
       const data = await response.json();
 
-      // Redirecionar para o Stripe Checkout
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -120,7 +241,6 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, [session?.user]);
 
-  // Abrir portal do cliente Stripe
   const openCustomerPortal = useCallback(async () => {
     if (!session?.user?.id) {
       setError('Usuário não autenticado');
@@ -147,7 +267,6 @@ export function useSubscription(): UseSubscriptionReturn {
 
       const data = await response.json();
 
-      // Redirecionar para o portal do cliente
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -160,7 +279,43 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, [session?.user?.id]);
 
-  // Se não estiver autenticado, retornar estado inicial
+  // 🆕 NOVOS - DADOS CALCULADOS
+  const planType = subscription?.planoAtual || null;
+  
+  const limitations = isActive && planType && PLAN_LIMITATIONS[planType] 
+    ? PLAN_LIMITATIONS[planType]
+    : DEFAULT_LIMITATIONS;
+//eslint-disable-next-line
+  const currentUsage = {
+    iaQueries: subscription?.usoMensal.consultasIA || 0,
+    pdfProcessed: subscription?.usoMensal.pdfProcessados || 0,
+  };
+
+  // 🆕 NOVOS - MÉTODOS UTILITÁRIOS
+  const canUseFeature = useCallback((feature: keyof PlanLimitations): boolean => {
+    if (!isActive) return false;
+    return Boolean(limitations[feature]);
+  }, [isActive, limitations]);
+
+  const hasReachedLimit = useCallback((type: 'consultasIA' | 'pdfProcessados'): boolean => {
+    if (!isActive || !subscription) return true;
+    
+    const used = type === 'consultasIA' ? currentUsage.iaQueries : currentUsage.pdfProcessed;
+    const limit = type === 'consultasIA' ? limitations.monthlyIAQueries : limitations.monthlyPdfProcessing;
+    
+    return used >= limit;
+  }, [isActive, subscription, currentUsage, limitations]);
+
+  const getRemainingUsage = useCallback((type: 'consultasIA' | 'pdfProcessados'): number => {
+    if (!isActive || !subscription) return 0;
+    
+    const used = type === 'consultasIA' ? currentUsage.iaQueries : currentUsage.pdfProcessed;
+    const limit = type === 'consultasIA' ? limitations.monthlyIAQueries : limitations.monthlyPdfProcessing;
+    
+    return Math.max(0, limit - used);
+  }, [isActive, subscription, currentUsage, limitations]);
+
+  // ✅ RETORNOS PARA STATUS NÃO AUTENTICADO (mantidos)
   if (status === 'loading') {
     return {
       isActive: false,
@@ -170,6 +325,13 @@ export function useSubscription(): UseSubscriptionReturn {
       refetch,
       openPaymentModal,
       openCustomerPortal,
+      // 🆕 NOVOS
+      planType: null,
+      limitations: DEFAULT_LIMITATIONS,
+      currentUsage: { iaQueries: 0, pdfProcessed: 0 },
+      canUseFeature: () => false,
+      hasReachedLimit: () => true,
+      getRemainingUsage: () => 0,
     };
   }
 
@@ -182,24 +344,39 @@ export function useSubscription(): UseSubscriptionReturn {
       refetch,
       openPaymentModal,
       openCustomerPortal,
+      // 🆕 NOVOS
+      planType: null,
+      limitations: DEFAULT_LIMITATIONS,
+      currentUsage: { iaQueries: 0, pdfProcessed: 0 },
+      canUseFeature: () => false,
+      hasReachedLimit: () => true,
+      getRemainingUsage: () => 0,
     };
   }
 
+  // ✅ RETORNO PRINCIPAL (expandido)
   return {
+    // ✅ EXISTENTES
     isActive,
     subscription,
     isLoading,
     error,
     refetch,
     openPaymentModal: () => {
-      // Se já tem assinatura ativa, vai para o portal
       if (isActive) {
         openCustomerPortal();
       } else {
-        // Se não tem assinatura, cria checkout
         createCheckoutSession();
       }
     },
     openCustomerPortal,
+    
+    // 🆕 NOVOS
+    planType,
+    limitations,
+    currentUsage,
+    canUseFeature,
+    hasReachedLimit,
+    getRemainingUsage,
   };
 }

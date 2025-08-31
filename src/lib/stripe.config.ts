@@ -16,56 +16,58 @@ export const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_K
 
 export const SUBSCRIPTION_CONFIG = {
   plans: {
-    basico: {
-      name: 'Básico',
-      price: 'R$ 97',
-      priceId: 'price_1RtdqRDFq6ALe0I1cCmMzPgb',
-      features: [
-        '200 páginas PDF/mês', 
-        '500 consultas IA/mês', 
-        '1 usuário',
-        'Relatórios básicos',
-        'Suporte por email',
-        'IA 24h para agendamentos',
-        'Página personalizada',
-        'Multi-usuários',
-        'Analytics avançados',
-        'Suporte prioritário',
-      ]
-    },
     profissional: {
       name: 'Profissional',
-      price: 'R$ 197',
-      priceId: 'price_1RtdrfDFq6ALe0I1g2mVlr5q',
+      price: 'R$ 147',
+      priceId: 'price_1RzQggDFq6ALe0I1LXKaaGLE',
+      limits: {
+        consultasIA: 500,
+        pdfProcessados: 50,
+        loginsSimultaneos: 1
+      },
       features: [
-          '300 páginas PDF/mês', 
-          '2.000 consultas IA/mês', 
-          'Até 5 usuários',
-          'Relatórios avançados',
-          'IA 24h para agendamentos',
-          'Página personalizada',
-          'Analytics avançados',
-          'Suporte prioritário',
-          'Integrações API',
-          'Dashboard personalizado', 
+        '500 consultas IA/mês',
+        '50 PDFs processados/mês', 
+        '1 usuário simultâneo',
+        'IA jurídica 24h',
+        'Análise de contratos',
+        'Relatórios básicos',
+        'Suporte por email',
+        'Dashboard personalizado'
       ]
     },
-    empresarial: {
-      name: 'Empresarial',
-      price: 'R$ 397',
-      priceId: 'price_1RtdszDFq6ALe0I1Yga67T2y',
+    escritorio: {
+      name: 'Escritório',
+      price: 'R$ 297',
+      priceId: 'price_1RzQkuDFq6ALe0I14czUgLBr',
+      limits: {
+        consultasIA: 1500,
+        pdfProcessados: 150,
+        loginsSimultaneos: 3
+      },
       features: [
-        'Páginas PDF ilimitadas', 
-        'Consultas IA ilimitadas', 
-        'Usuários ilimitados',
-        'Relatórios enterprise',
-        'IA 24h para agendamentos',
-        'Páginas personalizadas',
-        'Analytics enterprise',
-        'Suporte dedicado',
-        'Integrações completas',
-        'Dashboard personalizado'
+        '1.500 consultas IA/mês',
+        '150 PDFs processados/mês',
+        '3 usuários simultâneos',
+        'IA jurídica 24h',
+        'Análise de contratos avançada',
+        'Relatórios completos',
+        'Analytics avançados',
+        'Integrações API',
+        'Suporte prioritário',
+        'Dashboard personalizado',
+        'Gestão de equipe'
       ]
     }
   }
+};
+
+// Helper para obter configuração do plano
+export const getPlanConfig = (planType: 'profissional' | 'escritorio') => {
+  return SUBSCRIPTION_CONFIG.plans[planType];
+};
+
+// Helper para obter todos os planos
+export const getAllPlans = () => {
+  return Object.values(SUBSCRIPTION_CONFIG.plans);
 };

@@ -82,7 +82,7 @@ export default function AdvogadoSignIn() {
             </Link>
 
             {/* Logo Centralizada - Usando cores do DS */}
-            <div className="flex items-center justify-center order-2 sm:order-none">
+            <div className="flex items-center justify-center order-4 sm:order-none">
               <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7, fontSize: '1.2rem' }} />
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
                 IAJURIS
@@ -215,7 +215,7 @@ export default function AdvogadoSignIn() {
             {/* Footer do Form */}
             <div className="mt-6 pt-6 border-t border-[#6e6d6b] border-opacity-20 text-center">
               <p className="text-xs text-[#9ca3af]">
-                Problemas para acessar? Entre em contato com o suporte
+                Problemas para acessar? Entre em contato iajurissuporte@outlook.com
               </p>
             </div>
           </div>
