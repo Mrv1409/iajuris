@@ -15,12 +15,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { advogadoId, email, name, successUrl, cancelUrl } = await request.json();
+    const { advogadoId, email, name, plano, successUrl, cancelUrl } = await request.json();
 
     // Validar dados
-    if (!advogadoId || !email || !name || !successUrl || !cancelUrl) {
+    if (!advogadoId || !email || !name || !plano || !successUrl || !cancelUrl) {
       return NextResponse.json(
         { error: 'Dados obrigatórios faltando' },
+        { status: 400 }
+      );
+    }
+
+    // Validar plano
+    if (!['profissional', 'escritorio'].includes(plano)) {
+      return NextResponse.json(
+        { error: 'Plano inválido' },
         { status: 400 }
       );
     }
@@ -38,6 +46,7 @@ export async function POST(request: NextRequest) {
       advogadoId,
       email,
       name,
+      plano,        // ← ADICIONADO O PARÂMETRO PLANO
       successUrl,
       cancelUrl
     );
@@ -55,4 +64,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
