@@ -64,9 +64,7 @@ const PdfAnalysisPage: React.FC = () => {
   // ✅ LÓGICA HÍBRIDA SEGURA: MVP (Owner) + SaaS (Isolamento por ID)
   const OWNER_EMAIL = 'marvincosta321@gmail.com';
   const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
-  const clientId = isOwnerMVP 
-    ? OWNER_EMAIL                // MVP: Acesso exclusivo do owner
-    : session?.user?.id;         // SaaS: Isolamento real por user ID
+  const clientId = session?.user?.id;         // SaaS: Isolamento real por user ID
   
   // Estados principais
   const [currentState, setCurrentState] = useState<AppState>('upload');
@@ -227,7 +225,7 @@ const PdfAnalysisPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Botão Voltar */}
             <Link 
-              href={isOwnerMVP ? "/dashboard" : "/dashboard/leads/advogado"}
+              href="/dashboard/leads/advogado"
               className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group"
             >
               <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7 }} />

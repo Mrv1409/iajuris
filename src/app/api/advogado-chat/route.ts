@@ -41,7 +41,7 @@ async function getAdvogadoData(slug: string): Promise<AdvogadoData | null> {
 
 // Função para determinar tratamento (Sr./Sra.)
 function getUserTreatment(nome: string | undefined): string {
-  if (!nome || nome.trim() === '') {
+  if (!nome || nome.trim() === '' || nome === '[NOME_CLIENTE]') {
     return 'Sr(a)';
   }
   
@@ -54,44 +54,59 @@ function getUserTreatment(nome: string | undefined): string {
 }
 
 function generateAdvogadoPrompt(advogadoData: AdvogadoData): string {
-  const especialidadesTexto = advogadoData.especialidades.join(", ");
+  const especialidadesTexto = advogadoData.especialidades?.length > 0 ? advogadoData.especialidades.join(", ") : "direito";
   const experienciaTexto = advogadoData.experiencia || "vasta experiência";
-  const localizacaoTexto = `${advogadoData.cidade}, ${advogadoData.estado}`;
+  const localizacaoTexto = `${advogadoData.cidade || 'Brasil'}${advogadoData.estado ? ', ' + advogadoData.estado : ''}`;
+  const telefoneTexto = advogadoData.telefone || "telefone disponível no escritório";
   
-  return `Você é a assistente de inteligência artificial do escritório de ${advogadoData.nome}, um(a) advogado(a) renomado(a) especializado(a) em direito brasileiro e atuante em ${localizacaoTexto}.
+  return `Você é a assistente de inteligência artificial de ${advogadoData.nome}, advogado(a) especializado(a) em ${especialidadesTexto}.
 
-IMPORTANTE - INSTRUÇÕES ESPECÍFICAS:
-1. Se esta for a primeira interação (isInicial=true), você DEVE começar sua resposta EXATAMENTE com esta estrutura:
-   "Muito bem-vindo(a), [NOME_CLIENTE]! Você fez uma excelente escolha em procurar ${advogadoData.nome}, que já conta com ${experienciaTexto} de sólida experiência jurídica em ${especialidadesTexto}. ${advogadoData.nome} possui amplo conhecimento para melhor defender seus interesses e está localizado(a) em ${localizacaoTexto}, oferecendo atendimento personalizado e de qualidade."
+INSTRUÇÕES ESPECÍFICAS:
 
-2. Após esta introdução (apenas na primeira interação), responda à dúvida jurídica de forma:
-   - SIMPLES e ACESSÍVEL, sem juridiquês
-   - EMPÁTICA e ACOLHEDORA
-   - CLARA, como se explicasse para um amigo
-   - SEMPRE como assistente/secretária de ${advogadoData.nome}
+1. PRIMEIRA INTERAÇÃO (isInicial=true) - Comece SEMPRE assim:
+   "Olá, [NOME_CLIENTE]! Bem-vindo(a) ao escritório de ${advogadoData.nome}, que conta com ${experienciaTexto} em ${especialidadesTexto} e atende em ${localizacaoTexto}."
 
-3. SEMPRE mantenha TERCEIRA PESSOA:
+2. IDENTIFIQUE A ÁREA JURÍDICA da pergunta:
+   - CIVIL: acidentes, contratos, família, indenizações, danos morais, vizinhança
+   - PENAL: crimes, prisão, delegacia, processos criminais, flagrante
+   - TRABALHISTA: demissão, FGTS, horas extras, rescisão, CLT
+   - PREVIDENCIÁRIO: aposentadoria, INSS, benefícios, auxílios
+   - CONSUMIDOR: compras defeituosas, serviços ruins, bancos
+   - IMOBILIÁRIO: aluguel, compra/venda, financiamento
+
+3. RESPONDA de forma:
+   - SIMPLES (sem juridiquês - fale como se explicasse para um amigo)
+   - EMPÁTICA ("Entendo sua situação", "Sinto muito pelo ocorrido")
+   - ESPECÍFICA para a área jurídica identificada
+   - OBJETIVA (máximo 4-5 linhas de explicação)
+
+4. QUALIFIQUE O CASO perguntando 2-3 questões específicas:
+   - Para ACIDENTES DE TRÂNSITO: "Você fez boletim de ocorrência? Tem seguro? Ficou com sequelas?"
+   - Para CRIMES/PRISÃO: "Foi lavrado flagrante? A pessoa precisa de advogado urgente? Qual a acusação?"
+   - Para QUESTÕES TRABALHISTAS: "Já foi demitido? Tem carteira assinada? Quantos anos trabalhou?"
+   - Para INSS/APOSENTADORIA: "Já deu entrada no pedido? Tem quantos anos de contribuição?"
+   - Para FAMÍLIA: "É divórcio consensual? Tem filhos menores? Há bens para dividir?"
+
+5. SEMPRE termine oferecendo:
+   "Gostaria de agendar uma consulta com ${advogadoData.nome} ou falar diretamente pelo WhatsApp: ${telefoneTexto}?"
+
+6. Para interações subsequentes (não inicial), mantenha tom acolhedor mas sem repetir a introdução promocional.
+
+7. SEMPRE mantenha TERCEIRA PESSOA:
    - ✅ "${advogadoData.nome} tem experiência em..."
    - ✅ "Nosso escritório pode ajudar..."  
    - ✅ "${advogadoData.nome} costuma orientar que..."
-   - ❌ NUNCA diga "Eu tenho", "Eu posso", "Eu sou"
-
-4. SEMPRE termine perguntando se gostaria de:
-   - Agendar uma consulta presencial com ${advogadoData.nome}
-   - Falar diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}
-   - Receber mais informações sobre ${especialidadesTexto}
-
-5. Para interações subsequentes, mantenha o tom acolhedor mas sem repetir a introdução promocional.
+   - ❌ NUNCA diga "Eu tenho", "Eu posso", "Eu sou advogado"
 
 DADOS DO PROFISSIONAL:
 - Nome: ${advogadoData.nome}
 - Especialidades: ${especialidadesTexto}
 - Experiência: ${experienciaTexto}
 - Localização: ${localizacaoTexto}
-- Contato: ${advogadoData.telefone}
+- Contato: ${telefoneTexto}
 - Biografia: ${advogadoData.biografia || 'Profissional dedicado ao direito'}
 
-Responda sempre como a assistente pessoal de ${advogadoData.nome}, promovendo os serviços dele(a) de forma natural e acolhedora, NUNCA falando em primeira pessoa sobre conhecimento jurídico.`;
+Seja sempre a assistente pessoal de ${advogadoData.nome}, promovendo os serviços de forma natural e acolhedora.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -161,11 +176,11 @@ export async function POST(request: NextRequest) {
       if (tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE') {
         errorMessage = 'Recebemos sua mensagem, entraremos em contato !!!';
       } else if (tokenCheck.error.code === 'DAILY_LIMIT') {
-        errorMessage = `Limite diário de consultas atingido. Tente novamente amanhã ou entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+        errorMessage = `Limite diário de consultas atingido. Tente novamente amanhã ou entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`;
       } else if (tokenCheck.error.code === 'MINUTE_LIMIT') {
-        errorMessage = `Muitas consultas em pouco tempo. Aguarde alguns minutos ou fale diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+        errorMessage = `Muitas consultas em pouco tempo. Aguarde alguns minutos ou fale diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`;
       } else {
-        errorMessage = `Consulta indisponível no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+        errorMessage = `Consulta indisponível no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`;
       }
 
       const status = tokenCheck.error.code === 'SUBSCRIPTION_INACTIVE' ? 402 : 429;
@@ -205,7 +220,7 @@ export async function POST(request: NextRequest) {
       userPrompt = `Esta é a primeira interação. Cliente: ${userTreatment}${clienteTelefone ? `, telefone: ${clienteTelefone}` : ''}. 
       Situação apresentada: ${mensagem}
       
-      LEMBRE-SE: Comece OBRIGATORIAMENTE com a introdução promocional completa do escritório de ${advogadoData.nome} antes de responder à dúvida.`;
+      LEMBRE-SE: Substitua [NOME_CLIENTE] por "${userTreatment}" e comece com a introdução promocional antes de responder à dúvida.`;
     } else {
       // Continuação da conversa
       userPrompt = mensagem || 'Olá, preciso de ajuda jurídica.';
@@ -213,7 +228,7 @@ export async function POST(request: NextRequest) {
 
     // Configuração da requisição para a API da Groq
     const requestBody = {
-      model: 'llama3-8b-8192',
+      model: 'llama-3.1-8b-instant',
       messages: [
         {
           role: 'system',
@@ -262,7 +277,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Erro ao processar com a IA',
-          resposta: `Nosso sistema de IA está temporariamente indisponível. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`
+          resposta: `Nosso sistema de IA está temporariamente indisponível. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`
         },
         { status: 500 }
       );
@@ -277,14 +292,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Erro ao processar resposta da IA',
-          resposta: `Erro técnico temporário. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`
+          resposta: `Erro técnico temporário. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`
         },
         { status: 500 }
       );
     }
 
     const respostaIA = data.choices?.[0]?.message?.content || 
-      `Desculpe, não consegui processar sua solicitação no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone}.`;
+      `Desculpe, não consegui processar sua solicitação no momento. Entre em contato diretamente com ${advogadoData.nome} pelo WhatsApp: ${advogadoData.telefone || 'telefone disponível no escritório'}.`;
 
     // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - INCREMENTO APÓS SUCESSO
     try {
@@ -313,8 +328,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         advogado: advogadoData.nome,
         especialidades: advogadoData.especialidades,
-        localizacao: `${advogadoData.cidade}, ${advogadoData.estado}`,
-        contato: `WhatsApp: ${advogadoData.telefone}`,
+        localizacao: `${advogadoData.cidade || 'Brasil'}${advogadoData.estado ? ', ' + advogadoData.estado : ''}`,
+        contato: `WhatsApp: ${advogadoData.telefone || 'disponível no escritório'}`,
         tratamentoUsuario: userTreatment
       }
     });

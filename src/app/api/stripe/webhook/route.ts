@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         if (priceId === 'price_1RzQggDFq6ALe0I1LXKaaGLE') {
           planoAtual = 'escritorio'; // R$ 297
         } else if (priceId === 'price_1S0mgDDFq6ALe0I1KlKC1mrD') {
-          planoAtual = 'profissional'; // R$ 247
+          planoAtual = 'profissional'; // R$ 297
         }
 
         // Usar método do SubscriptionService para obter limites

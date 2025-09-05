@@ -191,7 +191,7 @@ export class SubscriptionService {
       let priceId: string;
       
       if (plano === 'profissional') {
-        priceId = SUBSCRIPTION_CONFIG.plans.profissional?.priceId || 'price_1S0mgDDFq6ALe0I1KlKC1mrD'; // R$ 247
+        priceId = SUBSCRIPTION_CONFIG.plans.profissional?.priceId || 'price_1S0mgDDFq6ALe0I1KlKC1mrD'; // R$ 297
       } else {
         priceId = SUBSCRIPTION_CONFIG.plans.escritorio?.priceId || 'price_1RzQkuDFq6ALe0I14czUgLBr'; // R$ 297
       }

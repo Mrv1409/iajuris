@@ -26,6 +26,28 @@ interface LeadSaas {
   historico?: unknown[];
 }
 
+const handlePortalStripe = async (): Promise<void> => {
+  try {
+    const response = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        returnUrl: `${window.location.origin}/dashboard/leads/advogado` 
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erro na resposta da API');
+    }
+    
+    const { url } = await response.json();
+    window.open(url, '_blank');
+  } catch (error) {
+    console.error('Erro ao abrir portal:', error);
+    // Opcional: mostrar toast de erro
+  }
+};
+
 // Função para buscar leads do advogado (Firebase Real)
 const getLeadsByAdvogado = async (advogadoId: string): Promise<LeadSaas[]> => {
   try {
@@ -866,75 +888,91 @@ export default function AdvogadoDashboard() {
           )}
         </div>
 
-        {/* Footer com informações do sistema */}
-        <div className="mt-8 sm:mt-12">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
-            <div 
-              className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
-              style={{ 
-                backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                border: '1px solid rgba(176, 130, 90, 0.2)',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-              }}
-            >
-              <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">24/7</div>
-              <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Sistema Ativo</div>
-              <div className="text-xs text-[#6e6d6b]">Sempre disponível</div>
-            </div>
-            
-            <div 
-              className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
-              style={{ 
-                backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                border: '1px solid rgba(176, 130, 90, 0.2)',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-              }}
-            >
-              <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">IA</div>
-              <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Tecnologia Avançada</div>
-              <div className="text-xs text-[#6e6d6b]">Automação inteligente</div>
-            </div>
-            
-            <div 
-              className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
-              style={{ 
-                backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                border: '1px solid rgba(176, 130, 90, 0.2)',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
-              }}
-            >
-              <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">⚖️</div>
-              <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Foco Jurídico</div>
-              <div className="text-xs text-[#6e6d6b]">Especializado em direito</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CSS para animações customizadas */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 0.1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.2;
-            transform: scale(1.05);
-          }
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animate-pulse {
-          animation: pulse 3s ease-in-out infinite;
-        }
-      `}</style>
+        {/* Footer com informações do sistema e gerenciamento */}
+<div className="mt-8 sm:mt-12">
+  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
+    <div 
+      className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
+      style={{ 
+        backgroundColor: 'rgba(20, 20, 20, 0.8)',
+        border: '1px solid rgba(176, 130, 90, 0.2)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+      }}
+    >
+      <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">24/7</div>
+      <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Sistema Ativo</div>
+      <div className="text-xs text-[#6e6d6b]">Sempre disponível</div>
     </div>
-  );
+    
+    <div 
+      className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
+      style={{ 
+        backgroundColor: 'rgba(20, 20, 20, 0.8)',
+        border: '1px solid rgba(176, 130, 90, 0.2)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+      }}
+    >
+      <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">IA</div>
+      <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Tecnologia Avançada</div>
+      <div className="text-xs text-[#6e6d6b]">Automação inteligente</div>
+    </div>
+    
+    <div 
+      className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105"
+      style={{ 
+        backgroundColor: 'rgba(20, 20, 20, 0.8)',
+        border: '1px solid rgba(176, 130, 90, 0.2)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+      }}
+    >
+      <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">⚖️</div>
+      <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Foco Jurídico</div>
+      <div className="text-xs text-[#6e6d6b]">Especializado em direito</div>
+    </div>
+
+    {/* Card de Assinatura */}
+    <div 
+      className="p-4 sm:p-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+      style={{ 
+        backgroundColor: 'rgba(20, 20, 20, 0.8)',
+        border: '1px solid rgba(176, 130, 90, 0.2)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+      }}
+      onClick={handlePortalStripe}
+    >
+      <div className="text-2xl sm:text-3xl font-bold mb-2 text-[#b0825a]">💳</div>
+      <div className="text-xs sm:text-sm text-[#d4d4d4] mb-1">Minha Assinatura</div>
+      <div className="text-xs text-[#6e6d6b]">Gerenciar plano</div>
+    </div>
+  </div>
+ </div>
+</div>
+
+  {/* CSS para animações customizadas */}
+  <style jsx>{`
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.2;
+      transform: scale(1.05);
+    }
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animate-pulse {
+    animation: pulse 3s ease-in-out infinite;
+  }
+`}</style>
+</div>
+);
 }

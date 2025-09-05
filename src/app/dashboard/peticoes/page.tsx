@@ -26,7 +26,7 @@ export default function PeticoesPage() {
   // ✅ ISOLAMENTO HÍBRIDO MVP/SaaS - PADRÃO REPLICADO
   const OWNER_EMAIL = 'marvincosta321@gmail.com';
   const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
-  const advogadoId = isOwnerMVP ? OWNER_EMAIL : session?.user?.id;
+  const advogadoId = session?.user?.id;
 
   // Função para lidar com a geração da petição
   const handleGeneratePetition = async () => {

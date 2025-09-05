@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TokenMiddleware, TokenEstimator } from '@/middleware/token.middleware';
+import { db } from '@/firebase/firestore';
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 
 // Configuração para a API da Groq
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -41,6 +43,56 @@ const LEGAL_AREAS = {
   'constitucional': 'Direito Constitucional',
   'empresarial': 'Direito Empresarial'
 };
+
+// ✅ NOVA FUNÇÃO: Buscar dados do advogado no Firebase
+async function getAdvogadoData(advogadoId: string) {
+  try {
+    const advogadoRef = doc(db, 'advogados', advogadoId);
+    const advogadoSnap = await getDoc(advogadoRef);
+    
+    if (advogadoSnap.exists()) {
+      const data = advogadoSnap.data();
+      return {
+        nome: data.nome || 'Advogado',
+        oab: data.oab || '00.000',
+        cidade: data.cidade || 'São Paulo/SP'
+      };
+    }
+    
+    console.warn(`Advogado não encontrado: ${advogadoId}`);
+    return null;
+  } catch (error) {
+    console.error('Erro ao buscar dados do advogado:', error);
+    return null;
+  }
+}
+
+//eslint-disable-next-line
+async function savePeticaoToFirebase(advogadoId: string, peticaoData: any) {
+  try {
+    const peticaoRef = await addDoc(collection(db, 'peticoes'), {
+      advogadoId,
+      tipoDocumento: peticaoData.tipoDocumento,
+      areaJuridica: peticaoData.areaJuridica,
+      documento: peticaoData.documento,
+      dadosCliente: peticaoData.dadosCliente,
+      dadosAdversario: peticaoData.dadosAdversario,
+      descricaoCase: peticaoData.descricaoCase,
+      observacoes: peticaoData.observacoes,
+      instrucoes: peticaoData.instrucoes,
+      modelo: peticaoData.modelo,
+      tokensUsados: peticaoData.tokensUsados,
+      timestamp: new Date(),
+      createdAt: new Date().toISOString()
+    });
+    
+    console.log('Petição salva no Firebase:', peticaoRef.id);
+    return peticaoRef.id;
+  } catch (error) {
+    console.error('Erro ao salvar petição no Firebase:', error);
+    throw error;
+  }
+}
 
 // Função para identificar o tipo de documento
 function identifyDocumentType(text: string): keyof typeof DOCUMENT_TYPES {
@@ -130,7 +182,7 @@ export async function POST(request: NextRequest) {
       dadosAdversario, 
       observacoes,
       instrucoes,
-      advogadoId // ✅ Novo campo obrigatório para sistema de tokens
+      advogadoId // ✅ Campo obrigatório para sistema de tokens e Firebase
     } = body;
 
     // Validação dos dados obrigatórios
@@ -154,6 +206,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // ✅ NOVA FUNCIONALIDADE: Buscar dados do advogado no Firebase
+    const advogadoData = await getAdvogadoData(advogadoId);
+    if (!advogadoData) {
+      return NextResponse.json(
+        { 
+          error: 'Advogado não encontrado',
+          resposta: 'Dados do profissional não localizados. Verifique seu cadastro.'
+        },
+        { status: 404 }
+      );
+    }
+
+    console.log('Dados do advogado carregados:', advogadoData);
 
     // ✅ INTEGRAÇÃO DO SISTEMA DE TOKENS - VERIFICAÇÃO PRÉVIA
     const tokenCheck = await TokenMiddleware.checkTokens(advogadoId, 'DOC_GENERATION');
@@ -204,10 +270,16 @@ export async function POST(request: NextRequest) {
     const documentName = DOCUMENT_TYPES[finalDocumentType];
     const areaName = LEGAL_AREAS[finalLegalArea as keyof typeof LEGAL_AREAS] || 'Direito Civil';
 
-    // Prompt especializado para geração de petições jurídicas
-    const systemPrompt = `Você é um assistente jurídico especializado do ${OFFICE_NAME}, um escritório com ${OFFICE_HISTORY_YEARS} anos de experiência. 
+    // ✅ PROMPT MELHORADO COM DADOS REAIS DO ADVOGADO
+    const systemPrompt = `Você é um assistente jurídico especializado representando o(a) ${advogadoData.nome}, OAB/SP ${advogadoData.oab}, do escritório ${OFFICE_NAME} em ${advogadoData.cidade}, com ${OFFICE_HISTORY_YEARS} anos de experiência. 
 
 MISSÃO: Gerar petições e documentos jurídicos profissionais, tecnicamente corretos e bem fundamentados.
+
+DADOS DO ADVOGADO (USE SEMPRE):
+- Nome: ${advogadoData.nome}
+- OAB: ${advogadoData.oab}
+- Local: ${advogadoData.cidade}
+- Escritório: ${OFFICE_NAME}
 
 INSTRUÇÕES ESPECÍFICAS:
 1. SEMPRE estruture o documento seguindo as normas jurídicas brasileiras
@@ -217,19 +289,20 @@ INSTRUÇÕES ESPECÍFICAS:
 5. Mantenha tom formal e respeitoso
 6. Cite artigos de lei quando aplicável
 7. Estruture argumentação de forma convincente e técnica
+8. SEMPRE use os dados reais do advogado fornecidos acima
 
 ESTRUTURA PADRÃO:
 - Cabeçalho com identificação do juízo
-- Qualificação das partes
+- Qualificação das partes (USE OS DADOS FORNECIDOS)
 - Dos fatos
 - Do direito
 - Dos pedidos
 - Valor da causa (quando aplicável)
-- Encerramento formal
+- Encerramento formal com assinatura do advogado real
 
 ÁREAS DE ESPECIALIZAÇÃO: ${Object.values(LEGAL_AREAS).join(', ')}
 
-IMPORTANTE: Gere um documento completo, profissional e tecnicamente correto.`;
+IMPORTANTE: Gere um documento completo, profissional e tecnicamente correto usando os dados reais do advogado.`;
 
     // Construção do prompt específico
     let userPrompt = `SOLICITO A ELABORAÇÃO DE: ${documentName}
@@ -258,11 +331,11 @@ ${observacoes}`;
 ${instrucoes}`;
     }
 
-    userPrompt += `\n\nGere um documento jurídico completo, tecnicamente correto e profissional seguindo as melhores práticas jurídicas brasileiras.`;
+    userPrompt += `\n\nGere um documento jurídico completo, tecnicamente correto e profissional seguindo as melhores práticas jurídicas brasileiras. Use os dados reais do advogado ${advogadoData.nome}, OAB/SP ${advogadoData.oab}.`;
 
     // Configuração da requisição para a API da Groq
     const requestBody = {
-      model: 'llama3-8b-8192', // Modelo para documentos técnicos
+      model: 'openai/gpt-oss-120b', // ✅ Modelo que está funcionando bem
       messages: [
         {
           role: 'system',
@@ -286,8 +359,9 @@ ${instrucoes}`;
       hasApiKey: !!GROQ_API_KEY,
       documentType: finalDocumentType,
       legalArea: finalLegalArea,
-      model: 'llama3-8b-8192',
+      model: 'openai/gpt-oss-120b',
       advogadoId,
+      advogadoNome: advogadoData.nome,
       estimatedPromptTokens: promptTokens
     });
 
@@ -357,6 +431,27 @@ ${instrucoes}`;
       console.error('Erro ao registrar tokens:', tokenError);
     }
 
+    // ✅ NOVA FUNCIONALIDADE: Salvar petição no Firebase
+    try {
+      const peticaoId = await savePeticaoToFirebase(advogadoId, {
+        tipoDocumento: documentName,
+        areaJuridica: areaName,
+        documento: documentoGerado,
+        dadosCliente,
+        dadosAdversario,
+        descricaoCase,
+        observacoes,
+        instrucoes,
+        modelo: 'openai/gpt-oss-120b',
+        tokensUsados: promptTokens + TokenEstimator.estimateTokens(documentoGerado)
+      });
+
+      console.log('Petição salva com ID:', peticaoId);
+    } catch (saveError) {
+      // Log do erro mas não falha a resposta
+      console.error('Erro ao salvar petição no Firebase:', saveError);
+    }
+
     console.log('Documento jurídico gerado com sucesso');
     return NextResponse.json({
       resposta: documentoGerado,
@@ -364,7 +459,9 @@ ${instrucoes}`;
       metadata: {
         tipoDocumento: documentName,
         areaJuridica: areaName,
-        modelo: 'llama3-8b-8192',
+        modelo: 'openai/gpt-oss-120b',
+        advogado: advogadoData.nome,
+        oab: advogadoData.oab,
         timestamp: new Date().toISOString()
       }
     });

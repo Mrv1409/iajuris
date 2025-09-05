@@ -292,7 +292,7 @@ Obrigado.`;
                 Últimas vagas com preço promocional ante ao retorno dos valores oficiais
               </p>
               <p className="text-xs sm:text-sm opacity-80" style={{ color: '#bfbfbf' }}>
-                Sistema completo + site personalizado por R$ 247/mês
+                Sistema completo + site personalizado + IA + secretária 24h
               </p>
             </div>
           </div>

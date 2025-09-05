@@ -171,13 +171,13 @@ Gerado pelo sistema IAJuris`;
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         {result.sucesso ? (
-                            <CheckCircle className="h-10 w-10 text-white animate-pulse" />
+                            <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
                         ) : (
-                            <AlertCircle className="h-10 w-10 text-red-200" />
+                            <AlertCircle className="h-10 w-10 text-green-400" />
                         )}
                         <div>
                             <h1 className="text-3xl font-extrabold">Análise Concluída</h1>
-                            <p className="text-gray-100 font-semibold">{result.metadata.analysisType}</p>
+                            <p className="text-white font-semibold">{result.metadata.analysisType}</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
@@ -205,7 +205,7 @@ Gerado pelo sistema IAJuris`;
             <div className="p-6 bg-gray-800 border-b border-gray-700">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-gray-400">
                     <div className="flex items-start space-x-3">
-                        <FileText className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <FileText className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Arquivo</p>
                             <p className="font-semibold text-white break-words" title={result.metadata.fileName}>
@@ -215,7 +215,7 @@ Gerado pelo sistema IAJuris`;
                     </div>
 
                     <div className="flex items-start space-x-3">
-                        <Calendar className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <Calendar className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Data da Análise</p>
                             <p className="font-semibold text-white">
@@ -225,7 +225,7 @@ Gerado pelo sistema IAJuris`;
                     </div>
 
                     <div className="flex items-start space-x-3">
-                        <Cpu className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <Cpu className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Modelo IA</p>
                             <p className="font-semibold text-white">{result.metadata.modelo}</p>
@@ -233,7 +233,7 @@ Gerado pelo sistema IAJuris`;
                     </div>
 
                     <div className="flex items-start space-x-3">
-                        <HardDrive className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <HardDrive className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Tamanho</p>
                             <p className="font-semibold text-white">
@@ -243,7 +243,7 @@ Gerado pelo sistema IAJuris`;
                     </div>
 
                     <div className="flex items-start space-x-3">
-                        <Type className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <Type className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Texto Extraído</p>
                             <p className="font-semibold text-white">
@@ -253,7 +253,7 @@ Gerado pelo sistema IAJuris`;
                     </div>
 
                     <div className="flex items-start space-x-3">
-                        <Clock className="h-6 w-6 text-[#b0825a] flex-shrink-0" />
+                        <Clock className="h-6 w-6 text-gray-400 flex-shrink-0" />
                         <div>
                             <p className="text-sm">Status</p>
                             <p className={`font-semibold ${result.sucesso ? 'text-green-400' : 'text-red-400'}`}>
@@ -268,7 +268,7 @@ Gerado pelo sistema IAJuris`;
             <div className="p-4 bg-gray-900 border-b border-gray-700 flex items-center justify-between">
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center space-x-2 text-[#b0825a] hover:text-[#a17752] font-medium transition-colors"
+                    className="flex items-center space-x-2 text-gray-400 hover:text-[#a17752] font-medium transition-colors"
                 >
                     <span>{isExpanded ? 'Recolher' : 'Expandir'} Resultado</span>
                     {isExpanded ? (
@@ -312,7 +312,7 @@ Gerado pelo sistema IAJuris`;
                 <div className="p-6">
                     <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
                         <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
-                            <FileText className="h-6 w-6 text-[#b0825a]" />
+                            <FileText className="h-6 w-6 text-gray-400" />
                             <span>Resultado da Análise</span>
                         </h2>
                         

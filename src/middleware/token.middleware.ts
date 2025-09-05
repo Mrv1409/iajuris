@@ -5,11 +5,12 @@ import { SubscriptionService } from '@/services/subscription.service';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/firestore';
 
-// Estimativas de tokens por funcionalidade
+// 🚀 ESTIMATIVAS AJUSTADAS PARA DOCUMENTOS EXTENSOS (compatível com API)
+// Baseado na configuração real da API com chunking e rate limiting
 export const TOKEN_ESTIMATES = {
-  CHAT_PUBLIC: 500,     // Chat público - mensagem média
-  PDF_ANALYSIS: 25000,  // Análise PDF 50 páginas
-  DOC_GENERATION: 1500, // Geração documento (máx 3000 chars)
+  CHAT_PUBLIC: 500,        // Chat público - mensagem média (mantido)
+  PDF_ANALYSIS: 200000,    // 🚀 AUMENTADO: Análise PDF profissional (até 100+ páginas com chunking)
+  DOC_GENERATION: 1500,    // Geração documento (máx 3000 chars) (mantido)
 } as const;
 
 export type TokenType = keyof typeof TOKEN_ESTIMATES;
@@ -64,10 +65,28 @@ export class TokenMiddleware {
     }
   }
   
+  // 🚀 ATUALIZADA: Estimativa compatível com chunking da API
+  static async estimatePdfAnalysisTokens(fileSize: number, pages?: number): Promise<number> {
+    // Baseado na lógica real da API com chunking
+    if (pages) {
+      // ~1.500-2.000 tokens por página (incluindo chunking, overlap e consolidação)
+      const baseTokens = pages * 1800;
+      // Adiciona overhead para consolidação de múltiplos chunks
+      const consolidationOverhead = pages > 20 ? baseTokens * 0.3 : baseTokens * 0.1;
+      return Math.min(baseTokens + consolidationOverhead, 500000); // Cap aumentado
+    }
+    
+    // Fallback baseado no tamanho do arquivo
+    // PDF típico: ~2-3 tokens por byte considerando chunking
+    const estimatedTokens = Math.ceil(fileSize / 2.5);
+    return Math.min(estimatedTokens, 500000); // Cap aumentado para documentos extensos
+  }
+  
   // Verificar tokens antes da chamada IA
   static async checkTokens(
     advogadoId: string, 
-    tokenType: TokenType
+    tokenType: TokenType,
+    customTokenEstimate?: number
   ): Promise<{ success: true } | { success: false; error: TokenLimitError }> {
     try {
       // ✅ VERIFICAÇÃO DE ACESSO IRRESTRITO PRIMEIRO
@@ -91,7 +110,17 @@ export class TokenMiddleware {
       }
 
       // 2. Verificar limites de tokens
-      const tokensEstimados = TOKEN_ESTIMATES[tokenType];
+      const tokensEstimados = customTokenEstimate || TOKEN_ESTIMATES[tokenType];
+      
+      // 🚀 LOG MELHORADO para debugging de documentos extensos
+      console.log(`🧮 Verificação de tokens - Documentos Extensos:`, {
+        advogadoId,
+        tokenType,
+        tokensEstimados,
+        customEstimate: !!customTokenEstimate,
+        isLargeDocument: tokensEstimados > 50000
+      });
+      
       const canUse = await TokenService.canUseTokens(advogadoId, tokensEstimados);
 
       if (!canUse.canUse) {
@@ -109,6 +138,15 @@ export class TokenMiddleware {
           meiaNoite.setHours(24, 0, 0, 0);
           retryAfter = Math.floor((meiaNoite.getTime() - agora.getTime()) / 1000);
         }
+
+        // 🚀 LOG APRIMORADO para documentos extensos
+        console.log(`⚠️ Limite de tokens excedido - Documento Extenso:`, {
+          advogadoId,
+          tokensEstimados,
+          reason: canUse.reason,
+          limits: canUse.limitsInfo,
+          documentSize: tokensEstimados > 100000 ? 'VERY_LARGE' : tokensEstimados > 50000 ? 'LARGE' : 'MEDIUM'
+        });
 
         return {
           success: false,
@@ -148,6 +186,14 @@ export class TokenMiddleware {
         console.log(`🔓 Tokens não incrementados - acesso irrestrito para ${advogadoId}`);
         return;
       }
+
+      // 🚀 LOG MELHORADO para documentos extensos
+      console.log(`📊 Incrementando tokens - Documento Extenso:`, {
+        advogadoId,
+        tokensUsados,
+        timestamp: new Date().toISOString(),
+        isLargeDocument: tokensUsados > 50000
+      });
 
       await TokenService.incrementTokenUsage(advogadoId, tokensUsados);
     } catch (error) {
@@ -210,9 +256,9 @@ export class TokenGuard {
     return TokenMiddleware.checkTokens(advogadoId, 'CHAT_PUBLIC');
   }
 
-  // Para Análise PDF
-  static async checkPdfTokens(advogadoId: string) {
-    return TokenMiddleware.checkTokens(advogadoId, 'PDF_ANALYSIS');
+  // 🚀 ATUALIZADO: Para Análise PDF com suporte a documentos extensos
+  static async checkPdfTokens(advogadoId: string, customEstimate?: number) {
+    return TokenMiddleware.checkTokens(advogadoId, 'PDF_ANALYSIS', customEstimate);
   }
 
   // Para Geração de Documentos
@@ -230,23 +276,51 @@ export class TokenGuard {
     return TokenService.getUsageStats(advogadoId);
   }
 
-  // ✅ NOVA FUNÇÃO - Verificar se tem acesso irrestrito
+  // ✅ Verificar se tem acesso irrestrito
   static async hasUnrestrictedAccess(advogadoId: string) {
     return TokenMiddleware.hasUnrestrictedAccess(advogadoId);
   }
+
+  // 🚀 ATUALIZADA: Estimativa dinâmica para PDF extensos
+  static async estimatePdfTokens(fileSize: number, pages?: number) {
+    return TokenMiddleware.estimatePdfAnalysisTokens(fileSize, pages);
+  }
 }
 
-// Utilitário para estimar tokens de texto
+// 🚀 ATUALIZADO: Utilitário para estimar tokens compatível com chunking da API
 export class TokenEstimator {
   
-  // Estimativa simples: ~4 caracteres = 1 token
+  // Estimativa simples: ~4 caracteres = 1 token (mantida da API)
   static estimateTokens(text: string): number {
     return Math.ceil(text.length / 4);
   }
 
-  // Estimativa para PDF baseado em páginas
+  // 🚀 ATUALIZADA: Estimativa para PDF baseado em páginas (compatível com API)
   static estimatePdfTokens(numPages: number): number {
-    return numPages * 500; // ~500 tokens por página
+    // Fórmula alinhada com a API:
+    // - ~1500-2000 tokens por página de texto
+    // - Chunking e overlap adiciona overhead
+    // - Consolidação adiciona overhead adicional
+    const baseTokens = numPages * 1800;
+    const chunkingOverhead = numPages > 20 ? baseTokens * 0.25 : baseTokens * 0.15;
+    const consolidationOverhead = numPages > 50 ? baseTokens * 0.2 : baseTokens * 0.1;
+    
+    return Math.ceil(baseTokens + chunkingOverhead + consolidationOverhead);
+  }
+
+  // 🚀 ATUALIZADA: Estimativa baseada no tamanho do arquivo PDF (compatível com API)
+  static estimatePdfTokensByFileSize(fileSizeBytes: number): number {
+    // Alinhado com a API: PDF com chunking = ~2.5 bytes por token
+    return Math.ceil(fileSizeBytes / 2.5);
+  }
+
+  // 🚀 ATUALIZADA: Estimativa híbrida (compatível com chunking da API)
+  static estimatePdfTokensHybrid(fileSizeBytes: number, numPages?: number): number {
+    if (numPages) {
+      return this.estimatePdfTokens(numPages);
+    } else {
+      return this.estimatePdfTokensByFileSize(fileSizeBytes);
+    }
   }
 
   // Verificar se texto excede limite de documento (3000 chars)
@@ -256,6 +330,75 @@ export class TokenEstimator {
       valid: text.length <= maxLength,
       length: text.length,
       maxLength
+    };
+  }
+
+  // 🚀 COMPLETAMENTE ATUALIZADA: Validar PDF extenso (compatível com API)
+  static validatePdfSize(fileSizeBytes: number, numPages?: number): { 
+    valid: boolean; 
+    estimatedTokens: number; 
+    maxTokens: number;
+    recommendation?: string;
+  } {
+    const maxTokens = TOKEN_ESTIMATES.PDF_ANALYSIS; // 200k tokens
+    const estimatedTokens = this.estimatePdfTokensHybrid(fileSizeBytes, numPages);
+    
+    const result = {
+      valid: estimatedTokens <= maxTokens,
+      estimatedTokens,
+      maxTokens
+    };
+
+    if (!result.valid) {
+      if (numPages && numPages > 150) {
+        return {
+          ...result,
+          recommendation: `PDF muito extenso (${numPages} páginas). Para melhor performance, considere dividir em documentos de até 150 páginas.`
+        };
+      } else if (fileSizeBytes > 50 * 1024 * 1024) { // 50MB (limite da API)
+        return {
+          ...result,
+          recommendation: `Arquivo muito grande (${Math.round(fileSizeBytes / 1024 / 1024)}MB). Limite máximo: 50MB por arquivo.`
+        };
+      } else {
+        return {
+          ...result,
+          recommendation: `Documento requer muitos tokens (${Math.round(estimatedTokens/1000)}k). Considere um arquivo menor ou divida em partes.`
+        };
+      }
+    }
+
+    // Validações adicionais para documentos extensos
+    if (numPages && numPages > 100) {
+      return {
+        ...result,
+        recommendation: `Documento extenso (${numPages} páginas). O processamento pode levar vários minutos devido ao rate limiting da API.`
+      };
+    }
+
+    return result;
+  }
+
+  // 🚀 NOVA: Validação específica para limites da API (50MB, rate limiting)
+  static validateApiLimits(fileSizeBytes: number): {
+    valid: boolean;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+    
+    // Limite de tamanho da API
+    if (fileSizeBytes > 50 * 1024 * 1024) { // 50MB
+      issues.push(`Arquivo excede limite de 50MB (atual: ${Math.round(fileSizeBytes / 1024 / 1024)}MB)`);
+    }
+    
+    // Aviso sobre tempo de processamento
+    if (fileSizeBytes > 10 * 1024 * 1024) { // 10MB
+      issues.push('Arquivo grande - processamento pode levar vários minutos');
+    }
+    
+    return {
+      valid: issues.length === 0,
+      issues
     };
   }
 }

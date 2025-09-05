@@ -40,10 +40,10 @@ export default function DocumentosPage() {
   const [showModal, setShowModal] = useState(false);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
-  // ✅ ISOLAMENTO HÍBRIDO MVP/SaaS - PADRÃO IMPLEMENTADO
-  const OWNER_EMAIL = 'marvincosta321@gmail.com';
+  
+  const OWNER_EMAIL = 'marvincosta321@gmail.com';//eslint-disable-next-line
   const isOwnerMVP = session?.user?.email === OWNER_EMAIL;
-  const advogadoId = isOwnerMVP ? OWNER_EMAIL : session?.user?.id;
+  const advogadoId = session?.user?.id;
 
   // Carregar petições ao montar o componente
   useEffect(() => {

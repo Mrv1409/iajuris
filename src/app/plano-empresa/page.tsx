@@ -17,7 +17,7 @@ interface Feature {
 // Configuração do plano único - FOCO TOTAL NO PROFISSIONAL
 const PLAN = {
   name: 'Profissional',
-  price: 'R$ 247',
+  price: 'R$ 297',
   originalPrice: 'R$ 5.000+',
   priceId: 'price_1S0mgDDFq6ALe0I1KlKC1mrD',
   description: 'Site + App + IA + Secretária 24h para advogados',
@@ -271,20 +271,20 @@ export default function IAJurisLandingPage() {
   const marketComparison = [
     {
       traditional: "Sites tradicionais: R$ 5.000+",
-      iajuris: "IAJURIS: R$ 247/mês",
+      iajuris: "IAJURIS: R$ 297/mês",
       economy: "Economia: 97% menor custo",
       icon: "💰"
     },
     {
       traditional: "Análise manual: 3 dias",
-      iajuris: "IA IAJURIS: 30 segundos",
+      iajuris: "IA IAJURIS: alguns segundos",
       economy: "Economia: 99% do tempo",
       icon: "⚡"
     },
     {
       traditional: "6 ferramentas separadas",
       iajuris: "IAJURIS: Tudo integrado",
-      economy: "Economia: 1 única mensalidade",
+      economy: "Economia: mensalidade",
       icon: "🔧"
     },
     {
@@ -300,7 +300,7 @@ export default function IAJurisLandingPage() {
     {
       title: 'Site Profissional',
       subtitle: 'Sua vitrine digital completa',
-      description: 'Site responsivo, elegante e otimizado que substitui soluções de R$ 5.000+ por apenas R$ 247/mês.',
+      description: 'Site responsivo, elegante e otimizado que substitui soluções de R$ 5.000+ por apenas R$ 297/mês.',
       icon: <Globe className="w-8 h-8 sm:w-10 lg:w-12" />,
       benefit: 'Economia de 97%'
     },
@@ -331,7 +331,7 @@ export default function IAJurisLandingPage() {
     {
       name: 'Dr. Carlos Mendes',
       position: 'Advogado Tributarista, São Paulo',
-      text: 'Cancelei meu site de R$ 8.000 no primeiro mês. A IAJURIS me dá Site + App + IA + Secretária por R$ 147. A análise que levava 3 dias, resolvo em 30 segundos. ROI imediato.',
+      text: 'Cancelei meu site de R$ 8.000 no primeiro mês. A IAJURIS me dá Site + App + IA + Secretária por R$ 297. A análise que levava 3 dias, resolvo em 30 segundos. ROI imediato.',
       rating: 5,
       avatar: '👨‍💼',
       savings: 'Economizou R$ 95.000/ano'
@@ -357,7 +357,7 @@ export default function IAJurisLandingPage() {
   const faqData = [
     {
       question: 'A IAJURIS realmente substitui um site de R$ 5.000+?',
-      answer: 'Sim, completamente. Você terá um site profissional responsivo + IA que responde clientes + gestão completa + app mobile. Sites tradicionais custam R$ 5.000+ e só captam leads. A IAJURIS faz tudo isso por R$ 247/mês.'
+      answer: 'Sim, completamente. Você terá um site profissional responsivo + IA que responde clientes + gestão completa + app mobile. Sites tradicionais custam R$ 5.000+ e só captam leads. A IAJURIS faz tudo isso por R$ 297/mês.'
     },
     {
       question: 'Como funciona o limite de 1.000 páginas por mês?',
@@ -531,7 +531,7 @@ export default function IAJurisLandingPage() {
               <span className="text-[#bbb687]">Secretária 24h</span>
               <br />
               <span className="text-white">por apenas</span>{' '}
-              <span className="text-[#92b05a] text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl">R$ 247/mês</span>
+              <span className="text-[#92b05a] text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl">R$ 297/mês</span>
             </h2>
 
             {/* Destaque especial para 1.000 páginas */}
@@ -559,7 +559,7 @@ export default function IAJurisLandingPage() {
               <div className="text-xl sm:text-2xl lg:text-4xl text-[#b0825a]">→</div>
               <div className="text-center">
                 <div className="text-[#b0825a] text-xs sm:text-sm lg:text-lg">IAJURIS completo</div>
-                <div className="text-[#b0825a] text-lg sm:text-xl lg:text-3xl font-black">R$ 247/mês</div>
+                <div className="text-[#b0825a] text-lg sm:text-xl lg:text-3xl font-black">R$ 297/mês</div>
               </div>
             </div>
 
@@ -869,7 +869,7 @@ export default function IAJurisLandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 sm:mb-16">
           <h3 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">
             <span className="text-[#d4d4d4]">Tudo isso por apenas</span>{' '}
-            <span className="text-[#8fc75b]">R$ 247/mês</span>
+            <span className="text-[#8fc75b]">R$ 297/mês</span>
           </h3>
 
           <div className="relative">
@@ -917,7 +917,7 @@ export default function IAJurisLandingPage() {
                   {isLoading ? 'Processando...' : 'COMEÇAR AGORA - REVOLUCIONAR PRODUTIVIDADE'}
                 </button>
 
-                <p className="text-xs text-[#6e6d6b]">Sem compromisso • Cancele quando quiser</p>
+                <p className="text-xs text-[#6e6d6b]">Cancele quando quiser</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -1033,7 +1033,7 @@ export default function IAJurisLandingPage() {
               <span className="text-[#b0825a]">desperdiçar R$ 5.000+</span>
               <br />
               <span className="text-white">Tenha tudo por</span>{' '}
-              <span className="text-[#92c568]">R$ 247/mês</span>
+              <span className="text-[#92c568]">R$ 297/mês</span>
             </h3>
             
             <p className="text-lg sm:text-xl mb-6 sm:mb-8 text-[#d4d4d4] leading-relaxed">
@@ -1097,7 +1097,7 @@ export default function IAJurisLandingPage() {
               </div>
               <h3 className="text-base sm:text-lg font-bold text-white mb-1">Escritório Virtual</h3>
               <p className="text-[#b0825a] font-bold text-xs sm:text-sm mb-1">Site + App + IA + Secretária 24h</p>
-              <p className="text-xl sm:text-2xl font-black text-[#92c568] mb-1">R$ 247/mês</p>
+              <p className="text-xl sm:text-2xl font-black text-[#92c568] mb-1">R$ 297/mês</p>
               <p className="text-xs text-[#6e6d6b]">Revolucione sua produtividade</p>
             </div>
 
