@@ -9,7 +9,6 @@ import {
   Upload, 
   ArrowLeft, 
   User,
-  BarChart3,
   Scale,
   Gavel,
   Shield
@@ -190,7 +189,7 @@ const PdfAnalysisPage: React.FC = () => {
       averageTime: '2min'
     };
   };
-
+//eslint-disable-next-line
   const stats = getStats();
 
   // ✅ LOADING STATE - Aguarda verificação de sessão
@@ -233,29 +232,18 @@ const PdfAnalysisPage: React.FC = () => {
             </Link>
 
             {/* ✅ LOGO CENTRALIZADA CORRIGIDA */}
-            <div className="flex items-center justify-center flex-1 mx-4">
-              <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7 }} />
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
-                IAJURIS
-              </h1>
-              <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7 }} />
+            <div className="flex items-center justify-center flex-1">
+              <div className="flex items-center">
+                <Scale className="w-6 h-6 text-[#b0825a] mr-2" style={{ opacity: 0.7 }} />
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#b0825a] text-shadow-lg">
+                  IAJURIS
+                </h1>
+                <Gavel className="w-6 h-6 text-[#b0825a] ml-2" style={{ opacity: 0.7 }} />
+              </div>
             </div>
 
-            {/* Estatísticas + Indicador de Modo */}
-            <div className="hidden lg:flex items-center space-x-4">
-              {/* Estatísticas rápidas */}
-              <div className="flex items-center space-x-4 px-4 py-2 rounded-xl border"
-                   style={{ 
-                     backgroundColor: 'rgba(176, 130, 90, 0.1)',
-                     borderColor: 'rgba(176, 130, 90, 0.2)'
-                   }}>
-                <BarChart3 className="h-5 w-5" style={{ color: '#b0825a' }} />
-                <div className="text-sm">
-                  <span className="text-white font-medium">{stats.successRate}%</span>
-                  <span className="text-[#d4d4d4] ml-1">sucesso</span>
-                </div>
-              </div>
-
+            {/* Apenas Indicador de Usuário - Removido as estatísticas */}
+            <div className="flex items-center">
               {/* ✅ INDICADOR DE MODO - Apenas para desenvolvimento */}
               {process.env.NODE_ENV === 'development' && (
                 <div className="flex items-center space-x-2 px-3 py-2 rounded-lg text-xs"
@@ -272,7 +260,6 @@ const PdfAnalysisPage: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
 
         {/* Título da Página */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 border-b border-[#6e6d6b] border-opacity-20"
@@ -536,6 +523,7 @@ const PdfAnalysisPage: React.FC = () => {
         }
       `}</style>
     </div>
+   </div> 
   );
 };
 

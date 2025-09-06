@@ -551,7 +551,7 @@ export default function AdvogadoDashboard() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <span className="text-xl sm:text-2xl font-bold text-blue-400">🧮</span>
+                    <span className="text-xl sm:text-2xl font-bold text-[#cccccc]">🧮</span>
                     <span className="text-xs text-[#d4d4d4]">Cálculos precisos</span>
                   </div>
                   <div className="text-xs text-[#6e6d6b] group-hover:text-[#b0825a] transition-colors">
@@ -590,7 +590,7 @@ export default function AdvogadoDashboard() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <span className="text-xl sm:text-2xl font-bold text-[#6e6d6b]">💰</span>
+                    <span className="text-xl sm:text-2xl font-bold text-[#cccccc]">💰</span>
                     <span className="text-xs text-[#d4d4d4]">Fluxo de caixa</span>
                   </div>
                   <div className="text-xs text-[#6e6d6b] group-hover:text-[#b0825a] transition-colors">
@@ -695,7 +695,7 @@ export default function AdvogadoDashboard() {
                       className="p-2 sm:p-3 rounded-xl mr-3 sm:mr-4 transition-all duration-300 group-hover:scale-110"
                       style={{ backgroundColor: 'rgba(107, 114, 128, 0.2)' }}
                     >
-                      <FileSearch className="w-5 h-5 sm:w-6 sm:h-6 text-[#b0825a]" />
+                      <FileSearch className="w-5 h-5 sm:w-6 sm:h-6 text-[#cccccc]" />
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-[#b0825a] transition-colors duration-300">
                       Análise de PDF com IA

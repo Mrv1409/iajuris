@@ -144,7 +144,7 @@ export default function PeticoesPage() {
                 className="group flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg border"
                 style={{ 
                   backgroundColor: 'rgba(176, 130, 90, 0.1)',
-                  borderColor: 'rgba(176, 130, 90, 0.3)',
+                  borderColor: 'rgba(176, 130, 90, 0.2)',
                   color: '#b0825a'
                 }}
               >
@@ -158,7 +158,7 @@ export default function PeticoesPage() {
                 className="group flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                 style={{ 
                   background: 'linear-gradient(135deg, #b0825a 0%, #8b6942 50%, #6d532a 100%)',
-                  boxShadow: '0 10px 25px rgba(176, 130, 90, 0.3)',
+                  boxShadow: '0 10px 25px rgba(176, 130, 90, 0.2)',
                   color: '#ffffff'
                 }}
               >

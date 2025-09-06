@@ -401,7 +401,7 @@ export default function ClientesPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Botão Voltar */}
             <Link 
-              href={isOwnerMVP ? "/dashboard" : "/dashboard/leads/advogado"}
+              href="/dashboard/leads/advogado"
               className="flex items-center px-4 py-2 bg-[#2a2a2a] border border-[#6e6d6b] rounded-lg transition-all duration-300 transform hover:scale-105 hover:opacity-90 group"
             >
               <ArrowLeft className="w-4 h-4 mr-2 text-[#d4d4d4] group-hover:text-white transition-colors" style={{ opacity: 0.7 }} />
@@ -508,7 +508,7 @@ export default function ClientesPage() {
                      backgroundColor: 'rgba(20, 20, 20, 0.6)',
                      borderColor: 'rgba(34, 197, 94, 0.2)'
                    }}>
-                <div className="text-2xl font-bold mb-1 text-green-400">
+                <div className="text-2xl font-bold mb-1 text-[#b0825a]">
                   {isLoading ? '...' : estatisticas.ativos}
                 </div>
                 <div className="text-sm text-[#d4d4d4]">Ativos</div>
@@ -519,7 +519,7 @@ export default function ClientesPage() {
                      backgroundColor: 'rgba(20, 20, 20, 0.6)',
                      borderColor: 'rgba(249, 115, 22, 0.2)'
                    }}>
-                <div className="text-2xl font-bold mb-1 text-orange-400">
+                <div className="text-2xl font-bold mb-1 text-[#b0825a]">
                   {isLoading ? '...' : estatisticas.pendentes}
                 </div>
                 <div className="text-sm text-[#d4d4d4]">Pendentes</div>
@@ -530,7 +530,7 @@ export default function ClientesPage() {
                      backgroundColor: 'rgba(20, 20, 20, 0.6)',
                      borderColor: 'rgba(239, 68, 68, 0.2)'
                    }}>
-                <div className="text-2xl font-bold mb-1 text-red-400">
+                <div className="text-2xl font-bold mb-1 text-[#b0825a]">
                   {isLoading ? '...' : estatisticas.inativos}
                 </div>
                 <div className="text-sm text-[#d4d4d4]">Inativos</div>
@@ -648,7 +648,7 @@ export default function ClientesPage() {
                             className="p-2 rounded-lg transition-colors duration-200 hover:bg-blue-600/20"
                             title="Visualizar"
                           >
-                            <Eye className="w-5 h-5 text-blue-400" />
+                            <Eye className="w-5 h-5 text-white" />
                           </button>
                           
                           <button
@@ -656,7 +656,7 @@ export default function ClientesPage() {
                             className="p-2 rounded-lg transition-colors duration-200 hover:bg-yellow-600/20"
                             title="Editar"
                           >
-                            <Edit className="w-5 h-5 text-yellow-400" />
+                            <Edit className="w-5 h-5 text-gray-500" />
                           </button>
                           
                           <button
@@ -664,7 +664,7 @@ export default function ClientesPage() {
                             className="p-2 rounded-lg transition-colors duration-200 hover:bg-red-600/20"
                             title="Excluir"
                           >
-                            <Trash2 className="w-5 h-5 text-red-400" />
+                            <Trash2 className="w-5 h-5 text-red-500" />
                           </button>
                         </div>
                       </div>

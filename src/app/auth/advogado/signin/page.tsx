@@ -104,10 +104,20 @@ export default function AdvogadoSignIn() {
         <div className="max-w-md w-full">
           {/* Header do Login */}
           <div className="text-center mb-8">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-[#b0825a] via-[#8b6942] to-[#6d532a] rounded-full flex items-center justify-center mb-6 shadow-xl"
-                 style={{ boxShadow: '0 10px 30px rgba(176, 130, 90, 0.4)' }}>
-              <Scale className="w-10 h-10 text-white" />
+            {/* Título de Boas-vindas Sofisticado */}
+            <div className="mb-6 pt-4">
+              <h1 className="text-xl sm:text-2xl text-[#b0825a] mb-2" 
+                  style={{ 
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontStyle: 'italic',
+                    fontWeight: '300',
+                    letterSpacing: '0.05em'
+                  }}>
+                Bem-vindo(a)
+              </h1>
+              <div className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#b0825a] to-transparent opacity-60" />
             </div>
+            
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
               Acesso Profissional
             </h2>

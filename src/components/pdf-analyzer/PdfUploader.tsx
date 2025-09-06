@@ -1,7 +1,7 @@
 'use client';
 //eslint-disable-next-line
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, Info, Clock, Zap, Loader2 } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Clock, Zap, Loader2 } from 'lucide-react';
 
 // Interface para os tipos de análise disponíveis
 const ANALYSIS_TYPES = {
@@ -534,7 +534,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                             currentLimits.complexity === 'baixa' ? 'bg-green-900 text-green-300' :
                             currentLimits.complexity === 'média' ? 'bg-yellow-900 text-yellow-300' :
                             currentLimits.complexity === 'alta' ? 'bg-orange-900 text-orange-300' :
-                            'bg-red-900 text-red-300'
+                            'bg-red-600 text-red-300'
                         }`}>
                             Complexidade: {currentLimits.complexity}
                         </span>
@@ -721,46 +721,20 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                     )}
                 </div>
             )}
-
+               
             {/* Informações adicionais do sistema */}
-            <div className="mt-8 p-6 bg-gray-800 border border-gray-700 rounded-xl shadow-md">
-                <h3 className="font-semibold text-white mb-3 flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-[#b0825a]" />
-                    Sistema de Análise Avançada
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
-                    <div>
-                        <h4 className="text-gray-300 font-medium mb-2">Tipos de Análise:</h4>
-                        <ul className="space-y-1">
-                            <li><strong>Resumo:</strong> Síntese objetiva (5-10min)</li>
-                            <li><strong>Timeline:</strong> Cronologia detalhada (8-15min)</li>
-                            <li><strong>Partes:</strong> Identificação completa (5-10min)</li>
-                            <li><strong>Decisões:</strong> Extração de julgados (8-15min)</li>
-                            <li><strong>Estratégia:</strong> Análise profunda (10-20min)</li>
-                            <li><strong>Completa:</strong> Análise abrangente (15-25min)</li>
-                        </ul>
+                {selectedFile && (
+                    <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+                        <p className="text-xs text-gray-400">
+                            <strong>Limites Atuais:</strong> 50MB por arquivo • 100 páginas • 
+                            Processamento sequencial com delay otimizado
+                        </p>
                     </div>
-                    <div>
-                        <h4 className="text-gray-300 font-medium mb-2">Recursos Técnicos:</h4>
-                        <ul className="space-y-1">
-                            <li>• <strong>Chunking Inteligente:</strong> Divisão automática por seções</li>
-                            <li>• <strong>Rate Limiting:</strong> 6K tokens/min otimizado</li>
-                            <li>• <strong>Retry System:</strong> Recuperação automática</li>
-                            <li>• <strong>Token Management:</strong> Monitoramento em tempo real</li>
-                            <li>• <strong>Progress Tracking:</strong> Feedback detalhado</li>
-                            <li>• <strong>Middleware:</strong> Suporte até 200K tokens</li>
-                        </ul>
-                    </div>
-                </div>
+                )}
+
                 
-                <div className="mt-4 p-3 bg-gray-700 rounded-lg">
-                    <p className="text-xs text-gray-400">
-                        <strong>Limites Atuais:</strong> 50MB por arquivo • 100 páginas • 
-                        25 chunks máximo por análise • Processamento sequencial com delay otimizado
-                    </p>
-                </div>
-            </div>
         </div>
+        
     );
 };
 

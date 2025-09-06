@@ -210,7 +210,7 @@ export default function FinanceiroPage() {
             <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   border: '1px solid rgba(34, 197, 94, 0.2)',
+                   border: '1px solid rgba(34, 197, 94, 0.1)',
                    backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
@@ -226,7 +226,7 @@ export default function FinanceiroPage() {
                 )}
               </div>
               <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Honorários Recebidos</h3>
-              <p className="text-2xl font-bold mb-2" style={{ color: '#22c55e' }}>
+              <p className="text-2xl font-bold mb-2" style={{ color: '#cccccc' }}>
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
                     <RefreshCw className="w-5 h-5 animate-spin" />
@@ -245,7 +245,7 @@ export default function FinanceiroPage() {
             <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   border: '1px solid rgba(239, 68, 68, 0.2)',
+                   border: '1px solid rgba(239, 68, 68, 0.1)',
                    backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
@@ -261,7 +261,7 @@ export default function FinanceiroPage() {
                 )}
               </div>
               <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Despesas Pagas</h3>
-              <p className="text-2xl font-bold mb-2" style={{ color: '#ef4444' }}>
+              <p className="text-2xl font-bold mb-2" style={{ color: '#cccccc' }}>
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
                     <RefreshCw className="w-5 h-5 animate-spin" />
@@ -280,7 +280,7 @@ export default function FinanceiroPage() {
             <div className="rounded-2xl p-6 shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
                  style={{ 
                    backgroundColor: 'rgba(20, 20, 20, 0.8)',
-                   border: '1px solid rgba(176, 130, 90, 0.2)',
+                   border: '1px solid rgba(176, 130, 90, 0.1)',
                    backdropFilter: 'blur(8px)',
                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
                  }}>
@@ -297,7 +297,7 @@ export default function FinanceiroPage() {
               </div>
               <h3 className="text-sm font-medium mb-2 text-[#d4d4d4]">Saldo Líquido</h3>
               <p className={`text-2xl font-bold mb-2 ${
-                isLoading ? 'text-[#b0825a]' : dashboardData.saldoLiquido >= 0 ? 'text-green-400' : 'text-red-400'
+                isLoading ? 'text-[#b0825a]' : dashboardData.saldoLiquido >= 0 ? 'text-[#cccccc]' : 'text-red-400'
               }`}>
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
@@ -339,7 +339,7 @@ export default function FinanceiroPage() {
                   <span className="text-xs text-[#6e6d6b]">
                     Clique para gerenciar →
                   </span>
-                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
@@ -366,7 +366,7 @@ export default function FinanceiroPage() {
                   <span className="text-xs text-[#6e6d6b]">
                     Clique para gerenciar →
                   </span>
-                  <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
@@ -393,7 +393,7 @@ export default function FinanceiroPage() {
                   <span className="text-xs text-[#6e6d6b]">
                     Clique para emitir →
                   </span>
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
                 </div>
               </div>
             </Link>
