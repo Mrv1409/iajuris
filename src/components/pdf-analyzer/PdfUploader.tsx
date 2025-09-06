@@ -498,26 +498,26 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
     const currentLimits = ANALYSIS_LIMITS[analysisType as keyof typeof ANALYSIS_LIMITS];
 
     return (
-        <div className="w-full max-w-2xl mx-auto p-8 bg-gray-900 rounded-3xl shadow-xl border border-gray-800">
-            <div className="mb-8 text-center">
-                <h2 className="text-3xl font-extrabold text-white mb-2">
+        <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 bg-gray-900 rounded-3xl shadow-xl border border-gray-800">
+            <div className="mb-6 sm:mb-8 text-center">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
                     Análise PDF Avançada
                 </h2>
-                <p className="text-gray-400">
+                <p className="text-sm sm:text-base text-gray-400">
                     Sistema inteligente para documentos até 100 páginas com chunking automático
                 </p>
             </div>
 
             {/* Seletor de tipo de análise */}
-            <div className="mb-6">
-                <label className="block text-md font-medium text-gray-300 mb-3">
+            <div className="mb-4 sm:mb-6">
+                <label className="block text-sm sm:text-md font-medium text-gray-300 mb-2 sm:mb-3">
                     Tipo de Análise
                 </label>
                 <select
                     value={analysisType}
                     onChange={(e) => handleAnalysisTypeChange(e.target.value)}
                     disabled={isProcessing}
-                    className="w-full p-4 bg-gray-800 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-[#b0825a] focus:border-[#b0825a] disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors"
+                    className="w-full p-3 sm:p-4 text-sm sm:text-base bg-gray-800 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-[#b0825a] focus:border-[#b0825a] disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors"
                 >
                     {Object.entries(ANALYSIS_TYPES).map(([key, label]) => (
                         <option key={key} value={key}>
@@ -528,9 +528,9 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                 
                 {/* Informações sobre o tipo selecionado */}
                 <div className="mt-3 p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-300">{currentLimits.description}</span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                        <span className="text-sm text-gray-300 mb-2 sm:mb-0">{currentLimits.description}</span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium inline-block text-center ${
                             currentLimits.complexity === 'baixa' ? 'bg-green-900 text-green-300' :
                             currentLimits.complexity === 'média' ? 'bg-yellow-900 text-yellow-300' :
                             currentLimits.complexity === 'alta' ? 'bg-orange-900 text-orange-300' :
@@ -539,7 +539,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                             Complexidade: {currentLimits.complexity}
                         </span>
                     </div>
-                    <div className="text-xs text-gray-400 flex items-center gap-4">
+                    <div className="text-xs text-gray-400 grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4">
                         <span>📁 50MB</span>
                         <span>📄 {currentLimits.maxPages} páginas</span>
                         <span>⏱️ {currentLimits.estimatedTime}</span>
@@ -550,7 +550,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
             {/* Área de Upload */}
             <div
-                className={`relative border-2 rounded-2xl p-8 text-center transition-all duration-300 ${
+                className={`relative border-2 rounded-2xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-300 ${
                     dragActive
                         ? 'border-[#b0825a] bg-gray-800 scale-[1.01]'
                         : selectedFile
@@ -572,19 +572,19 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
                 {selectedFile ? (
                     // Arquivo selecionado
-                    <div className="flex flex-col items-center justify-between p-4 bg-gray-700 rounded-xl">
-                        <div className="flex items-center space-x-3 mb-4 w-full">
-                            <FileText className="h-10 w-10 text-[#b0825a] flex-shrink-0" />
-                            <div className="text-left flex-grow min-w-0">
-                                <p className="font-medium text-white truncate">{selectedFile.name}</p>
-                                <p className="text-sm text-gray-400">
+                    <div className="flex flex-col p-3 sm:p-4 bg-gray-700 rounded-xl">
+                        <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-4 w-full">
+                            <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-[#b0825a] flex-shrink-0" />
+                            <div className="text-center sm:text-left flex-grow min-w-0 w-full">
+                                <p className="font-medium text-white truncate text-sm sm:text-base">{selectedFile.name}</p>
+                                <p className="text-xs sm:text-sm text-gray-400">
                                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                                 </p>
                                 {validationInfo.isValid && (
                                     <div className="text-xs text-green-400 mt-1">
                                         <div>✅ ~{validationInfo.pages} páginas • ~{Math.floor((validationInfo.estimatedTokens || 0) / 1000)}k tokens</div>
                                         {validationInfo.estimatedChunks && validationInfo.estimatedChunks > 1 && (
-                                            <div className="flex items-center gap-2 mt-1">
+                                            <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                                                 <Zap className="h-3 w-3" />
                                                 <span>{validationInfo.estimatedChunks} chunks • ~{validationInfo.processingTimeMinutes}min</span>
                                             </div>
@@ -595,7 +595,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                         </div>
                         <button
                             onClick={removeSelectedFile}
-                            className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors"
+                            className="w-full py-2 sm:py-2 text-sm sm:text-base bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors"
                             disabled={isProcessing}
                         >
                             Remover Arquivo
@@ -604,14 +604,14 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                 ) : (
                     // Área de upload vazia
                     <div>
-                        <Upload className="mx-auto h-16 w-16 text-gray-500 mb-4" />
-                        <p className="text-xl font-bold text-gray-300 mb-2">
+                        <Upload className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-gray-500 mb-4" />
+                        <p className="text-lg sm:text-xl font-bold text-gray-300 mb-2">
                             Arraste e solte seu PDF aqui
                         </p>
                         <p className="text-gray-500 mb-4">ou</p>
                         <button
                             onClick={openFileSelector}
-                            className="bg-[#b0825a] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#a17752] transition-colors shadow-lg"
+                            className="bg-[#b0825a] text-white px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-[#a17752] transition-colors shadow-lg"
                             disabled={isProcessing}
                         >
                             Selecionar Arquivo
@@ -625,18 +625,18 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
             {/* Warning para documentos grandes */}
             {validationInfo.warning && (
-                <div className="mt-4 p-3 bg-yellow-900 border border-yellow-700 rounded-xl flex items-center space-x-3">
-                    <Clock className="h-5 w-5 text-yellow-400 flex-shrink-0" />
-                    <p className="text-yellow-300 text-sm">{validationInfo.warning}</p>
+                <div className="mt-4 p-3 bg-yellow-900 border border-yellow-700 rounded-xl flex items-start space-x-3">
+                    <Clock className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-yellow-300 text-xs sm:text-sm">{validationInfo.warning}</p>
                 </div>
             )}
 
             {/* Progress Bar para processamento */}
             {processingProgress && (
-                <div className="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-xl">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-800 border border-gray-700 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-300">Progresso</span>
-                        <span className="text-sm text-gray-400">
+                        <span className="text-xs sm:text-sm font-medium text-gray-300">Progresso</span>
+                        <span className="text-xs sm:text-sm text-gray-400">
                             {processingProgress.stage === 'completed' ? '100%' : 
                              `${Math.round((processingProgress.currentChunk / processingProgress.totalChunks) * 100)}%`}
                         </span>
@@ -650,14 +650,14 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                             }}
                         ></div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-start space-x-2">
                         {processingProgress.stage !== 'completed' && (
-                            <Loader2 className="h-4 w-4 text-[#b0825a] animate-spin" />
+                            <Loader2 className="h-4 w-4 text-[#b0825a] animate-spin flex-shrink-0 mt-0.5" />
                         )}
-                        <span className="text-sm text-gray-300">{processingProgress.message}</span>
+                        <span className="text-xs sm:text-sm text-gray-300 break-words">{processingProgress.message}</span>
                     </div>
                     {processingProgress.totalChunks > 1 && processingProgress.stage === 'processing' && (
-                        <div className="text-xs text-gray-400 mt-2">
+                        <div className="text-xs text-gray-400 mt-2 break-words">
                             Chunk {processingProgress.currentChunk + 1} de {processingProgress.totalChunks} 
                             {processingProgress.estimatedTimeRemaining > 0 && 
                              ` • ~${processingProgress.estimatedTimeRemaining}min restantes`}
@@ -668,20 +668,20 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
             {/* Mensagem de status */}
             {statusMessage && !processingProgress && (
-                <div className="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-xl flex items-center space-x-3 shadow-md">
-                    <CheckCircle className="h-6 w-6 text-blue-400 flex-shrink-0" />
-                    <p className="text-gray-300">{statusMessage}</p>
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-800 border border-gray-700 rounded-xl flex items-start space-x-3 shadow-md">
+                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-gray-300 text-xs sm:text-sm break-words">{statusMessage}</p>
                 </div>
             )}
             
             {/* Mensagem de erro */}
             {errorMessage && (
-                <div className="mt-6 p-4 bg-red-900 border border-red-700 rounded-xl flex items-center space-x-3 shadow-md">
-                    <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0" />
-                    <div className="flex-grow">
-                        <p className="text-red-300">{errorMessage}</p>
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-red-900 border border-red-700 rounded-xl flex items-start space-x-3 shadow-md">
+                    <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-grow min-w-0">
+                        <p className="text-red-300 text-xs sm:text-sm break-words">{errorMessage}</p>
                         {selectedFile && !validationInfo.isValid && (
-                            <p className="text-red-400 text-sm mt-1">
+                            <p className="text-red-400 text-xs mt-1 break-words">
                                 Sugestão: Tente um tipo de análise mais simples ou um documento menor.
                             </p>
                         )}
@@ -691,21 +691,21 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
             {/* Botão de análise */}
             {selectedFile && validationInfo.isValid && (
-                <div className="mt-8">
+                <div className="mt-6 sm:mt-8">
                     <button
                         onClick={handleAnalysis}
                         disabled={isProcessing || !validationInfo.isValid}
-                        className="w-full bg-[#b0825a] text-white py-4 px-6 rounded-xl font-extrabold text-lg hover:bg-[#a17752] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center space-x-3"
+                        className="w-full bg-[#b0825a] text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-extrabold text-sm sm:text-lg hover:bg-[#a17752] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center space-x-2 sm:space-x-3"
                     >
                         {isProcessing ? (
                             <>
-                                <Loader2 className="h-6 w-6 animate-spin" />
+                                <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
                                 <span>Processando com IA...</span>
                             </>
                         ) : (
                             <>
-                                <CheckCircle className="h-6 w-6" />
-                                <span>Iniciar {ANALYSIS_TYPES[analysisType as keyof typeof ANALYSIS_TYPES]}</span>
+                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <span className="break-words">Iniciar {ANALYSIS_TYPES[analysisType as keyof typeof ANALYSIS_TYPES]}</span>
                             </>
                         )}
                     </button>
@@ -713,7 +713,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                     {/* Estimativas detalhadas */}
                     {validationInfo.estimatedChunks && validationInfo.estimatedChunks > 1 && (
                         <div className="mt-3 text-center">
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 break-words px-2">
                                 Este documento será processado em {validationInfo.estimatedChunks} partes 
                                 com ~15 segundos entre cada uma (TPM: 6K tokens/min)
                             </p>
@@ -723,18 +723,15 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
             )}
                
             {/* Informações adicionais do sistema */}
-                {selectedFile && (
-                    <div className="mt-4 p-3 bg-gray-700 rounded-lg">
-                        <p className="text-xs text-gray-400">
-                            <strong>Limites Atuais:</strong> 50MB por arquivo • 100 páginas • 
-                            Processamento sequencial com delay otimizado
-                        </p>
-                    </div>
-                )}
-
-                
+            {selectedFile && (
+                <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-400 break-words">
+                        <strong>Limites Atuais:</strong> 50MB por arquivo • 100 páginas • 
+                        Processamento sequencial com delay otimizado
+                    </p>
+                </div>
+            )}
         </div>
-        
     );
 };
 
