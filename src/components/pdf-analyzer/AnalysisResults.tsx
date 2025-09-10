@@ -78,7 +78,6 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
      * @returns {Promise<void>}
      */
     const handleCopyText = () => {
-        // Usa o método mais robusto para copiar em ambientes de iFrame
         const tempTextArea = document.createElement('textarea');
         tempTextArea.value = result.resposta;
         document.body.appendChild(tempTextArea);
@@ -165,183 +164,224 @@ Gerado pelo sistema IAJuris`;
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto bg-gray-900 rounded-3xl shadow-xl border border-gray-800 overflow-hidden">
-            {/* Cabeçalho da Análise */}
-            <div className="bg-gradient-to-r from-[#b0825a] to-[#a17752] text-white p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        {result.sucesso ? (
-                            <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
-                        ) : (
-                            <AlertCircle className="h-10 w-10 text-green-400" />
-                        )}
-                        <div>
-                            <h1 className="text-3xl font-extrabold">Análise Concluída</h1>
-                            <p className="text-white font-semibold">{result.metadata.analysisType}</p>
-                        </div>
-                    </div>
-                    <div className="flex space-x-2">
-                        {onNewAnalysis && (
-                            <button
-                                onClick={onNewAnalysis}
-                                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
-                            >
-                                Nova Análise
-                            </button>
-                        )}
-                        {onClose && (
-                            <button
-                                onClick={onClose}
-                                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
-                            >
-                                Fechar
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Metadados da Análise */}
-            <div className="p-6 bg-gray-800 border-b border-gray-700">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-gray-400">
-                    <div className="flex items-start space-x-3">
-                        <FileText className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Arquivo</p>
-                            <p className="font-semibold text-white break-words" title={result.metadata.fileName}>
-                                {result.metadata.fileName}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                        <Calendar className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Data da Análise</p>
-                            <p className="font-semibold text-white">
-                                {formatDate(result.metadata.timestamp)}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                        <Cpu className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Modelo IA</p>
-                            <p className="font-semibold text-white">{result.metadata.modelo}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                        <HardDrive className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Tamanho</p>
-                            <p className="font-semibold text-white">
-                                {formatFileSize(result.metadata.fileSize)}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                        <Type className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Texto Extraído</p>
-                            <p className="font-semibold text-white">
-                                {result.metadata.textLength.toLocaleString()} caracteres
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                        <Clock className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-sm">Status</p>
-                            <p className={`font-semibold ${result.sucesso ? 'text-green-400' : 'text-red-400'}`}>
-                                {result.sucesso ? 'Sucesso' : 'Erro'}
-                            </p>
+        <div className="w-full max-w-full mx-auto px-2 sm:px-4 lg:px-6">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden backdrop-blur-sm">
+                
+                {/* Header - Redesenhado com melhor hierarquia visual */}
+                <div className="relative bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 px-4 py-6 sm:px-6 md:px-8 lg:py-8">
+                    <div className="absolute inset-0 bg-black/10"></div>
+                    <div className="relative z-10">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                            <div className="flex items-start space-x-3 sm:space-x-4 min-w-0 flex-1">
+                                <div className="flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-full p-2.5 sm:p-3">
+                                    {result.sucesso ? (
+                                        <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white animate-pulse" />
+                                    ) : (
+                                        <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1">
+                                        Análise Concluída
+                                    </h1>
+                                    <p className="text-white/90 text-base sm:text-lg font-medium truncate">
+                                        {result.metadata.analysisType}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Botões - Melhor responsividade */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto lg:flex-shrink-0">
+                                {onNewAnalysis && (
+                                    <button
+                                        onClick={onNewAnalysis}
+                                        className="bg-white/30 hover:bg-white/10 backdrop-blur-sm text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 active:scale-95 border border-white/20 text-sm sm:text-base whitespace-nowrap"
+                                    >
+                                        Nova Análise
+                                    </button>
+                                )}
+                                {onClose && (
+                                    <button
+                                        onClick={onClose}
+                                        className="bg-white/30 hover:bg-white/10 backdrop-blur-sm text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 active:scale-95 border border-white/10 text-sm sm:text-base whitespace-nowrap"
+                                    >
+                                        Voltar
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Barra de Ações e Expansão */}
-            <div className="p-4 bg-gray-900 border-b border-gray-700 flex items-center justify-between">
-                <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center space-x-2 text-gray-400 hover:text-[#a17752] font-medium transition-colors"
-                >
-                    <span>{isExpanded ? 'Recolher' : 'Expandir'} Resultado</span>
-                    {isExpanded ? (
-                        <ChevronUp className="h-5 w-5" />
-                    ) : (
-                        <ChevronDown className="h-5 w-5" />
-                    )}
-                </button>
-                <div className="flex space-x-2">
-                    <button
-                        onClick={handleCopyText}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors shadow"
-                        title="Copiar texto"
-                    >
-                        <Copy className="h-5 w-5" />
-                        <span className="hidden sm:inline">{copySuccess ? 'Copiado!' : 'Copiar'}</span>
-                    </button>
-
-                    <button
-                        onClick={handleDownload}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors shadow"
-                        title="Baixar como TXT"
-                    >
-                        <Download className="h-5 w-5" />
-                        <span className="hidden sm:inline">Baixar</span>
-                    </button>
-
-                    <button
-                        onClick={handlePrint}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors shadow"
-                        title="Imprimir"
-                    >
-                        <Printer className="h-5 w-5" />
-                        <span className="hidden sm:inline">Imprimir</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Conteúdo da Análise */}
-            {isExpanded && (
-                <div className="p-6">
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
-                            <FileText className="h-6 w-6 text-gray-400" />
-                            <span>Resultado da Análise</span>
-                        </h2>
+                {/* Metadata Grid - Melhor organização e responsividade */}
+                <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 bg-slate-800/50 border-b border-slate-700/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                         
-                        <div className="prose max-w-none prose-invert">
-                            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                                {result.resposta}
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Arquivo</p>
+                                    <p className="text-sm font-semibold text-white truncate mt-1" title={result.metadata.fileName}>
+                                        {result.metadata.fileName}
+                                    </p>
+                                </div>
                             </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <Calendar className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Data da Análise</p>
+                                    <p className="text-sm font-semibold text-white mt-1">
+                                        {formatDate(result.metadata.timestamp)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <Cpu className="h-5 w-5 text-green-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Modelo IA</p>
+                                    <p className="text-sm font-semibold text-white mt-1">{result.metadata.modelo}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <HardDrive className="h-5 w-5 text-purple-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Tamanho</p>
+                                    <p className="text-sm font-semibold text-white mt-1">
+                                        {formatFileSize(result.metadata.fileSize)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <Type className="h-5 w-5 text-cyan-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Texto Extraído</p>
+                                    <p className="text-sm font-semibold text-white mt-1">
+                                        {result.metadata.textLength.toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+                            <div className="flex items-center space-x-3">
+                                <Clock className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Status</p>
+                                    <p className={`text-sm font-semibold mt-1 ${result.sucesso ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {result.sucesso ? 'Sucesso' : 'Erro'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Barra de Controles - Melhor layout */}
+                <div className="px-4 py-4 sm:px-6 lg:px-8 bg-slate-900/50 border-b border-slate-700/30">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="flex items-center justify-center sm:justify-start space-x-2 text-slate-300 hover:text-amber-400 font-medium transition-colors group"
+                        >
+                            <span className="text-sm">{isExpanded ? 'Recolher' : 'Expandir'} Resultado</span>
+                            {isExpanded ? (
+                                <ChevronUp className="h-5 w-5 transition-transform group-hover:scale-110" />
+                            ) : (
+                                <ChevronDown className="h-5 w-5 transition-transform group-hover:scale-110" />
+                            )}
+                        </button>
+                        
+                        <div className="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3">
+                            <button
+                                onClick={handleCopyText}
+                                className="flex items-center space-x-2 bg-slate-700/50 hover:bg-slate-600/50 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 border border-slate-600/30 hover:border-amber-400/30 group text-sm whitespace-nowrap"
+                                title="Copiar texto"
+                            >
+                                <Copy className="h-4 w-4 transition-transform group-hover:scale-110" />
+                                <span className="font-medium">
+                                    {copySuccess ? 'Copiado!' : 'Copiar'}
+                                </span>
+                            </button>
+
+                            <button
+                                onClick={handleDownload}
+                                className="flex items-center space-x-2 bg-slate-700/50 hover:bg-slate-600/50 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 border border-slate-600/30 hover:border-blue-400/30 group text-sm whitespace-nowrap"
+                                title="Baixar como TXT"
+                            >
+                                <Download className="h-4 w-4 transition-transform group-hover:scale-110" />
+                                <span className="font-medium">Baixar</span>
+                            </button>
+
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center space-x-2 bg-slate-700/50 hover:bg-slate-600/50 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 border border-slate-600/30 hover:border-green-400/30 group text-sm whitespace-nowrap"
+                                title="Imprimir"
+                            >
+                                <Printer className="h-4 w-4 transition-transform group-hover:scale-110" />
+                                <span className="font-medium">Imprimir</span>
+                            </button>
                         </div>
                     </div>
-
-                    {!result.sucesso && (
-                        <div className="mt-6 p-4 bg-red-950 border border-red-900 rounded-xl">
-                            <div className="flex items-center space-x-2">
-                                <AlertCircle className="h-5 w-5 text-red-500" />
-                                <h3 className="font-medium text-red-400">Erro na Análise</h3>
-                            </div>
-                            <p className="text-red-300 mt-2">
-                                Houve um problema ao processar o documento. Verifique se o arquivo está correto e tente novamente.
-                            </p>
-                        </div>
-                    )}
                 </div>
-            )}
 
-            {/* Rodapé da Análise */}
-            <div className="p-4 bg-gray-800 text-center border-t border-gray-700">
-                <p className="text-sm text-gray-400">
-                    Análise gerada pelo sistema IAJuris • {formatDate(result.metadata.timestamp)}
-                </p>
+                {/* Conteúdo da Análise - Melhor tipografia e espaçamento */}
+                {isExpanded && (
+                    <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+                        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+                            <div className="bg-slate-800/50 px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-700/30">
+                                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-3">
+                                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
+                                    <span>Resultado da Análise</span>
+                                </h2>
+                            </div>
+                            
+                            <div className="p-4 sm:p-6">
+                                <div className="prose max-w-none">
+                                    <div className="text-slate-200 leading-relaxed text-sm sm:text-base tracking-wide whitespace-pre-wrap font-light">
+                                        {result.resposta}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {!result.sucesso && (
+                            <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-red-900/20 border border-red-800/30 rounded-xl backdrop-blur-sm">
+                                <div className="flex items-center space-x-3 mb-3">
+                                    <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-400 flex-shrink-0" />
+                                    <h3 className="font-bold text-red-300 text-base sm:text-lg">Erro na Análise</h3>
+                                </div>
+                                <p className="text-red-200 leading-relaxed text-sm sm:text-base">
+                                    Houve um problema ao processar o documento. Verifique se o arquivo está correto e tente novamente.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Footer - Melhor posicionamento */}
+                <div className="px-4 py-3 sm:px-6 sm:py-4 lg:px-8 bg-slate-900/80 border-t border-slate-700/30">
+                    <p className="text-xs sm:text-sm text-slate-400 text-center">
+                        Análise gerada pelo sistema 
+                        <span className="text-amber-400 font-medium"> IAJuris</span>
+                        <span className="mx-2">•</span>
+                        {formatDate(result.metadata.timestamp)}
+                    </p>
+                </div>
+
             </div>
         </div>
     );

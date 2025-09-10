@@ -534,7 +534,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                             currentLimits.complexity === 'baixa' ? 'bg-green-900 text-green-300' :
                             currentLimits.complexity === 'média' ? 'bg-yellow-900 text-yellow-300' :
                             currentLimits.complexity === 'alta' ? 'bg-orange-900 text-orange-300' :
-                            'bg-red-600 text-red-300'
+                            'bg-red-400 text-red-300'
                         }`}>
                             Complexidade: {currentLimits.complexity}
                         </span>
@@ -542,7 +542,6 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                     <div className="text-xs text-gray-400 grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4">
                         <span>📁 50MB</span>
                         <span>📄 {currentLimits.maxPages} páginas</span>
-                        <span>⏱️ {currentLimits.estimatedTime}</span>
                         <span>🔄 até {currentLimits.maxChunks} chunks</span>
                     </div>
                 </div>
@@ -574,7 +573,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                     // Arquivo selecionado
                     <div className="flex flex-col p-3 sm:p-4 bg-gray-700 rounded-xl">
                         <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-4 w-full">
-                            <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-[#b0825a] flex-shrink-0" />
+                            <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-[#99a1af] flex-shrink-0" />
                             <div className="text-center sm:text-left flex-grow min-w-0 w-full">
                                 <p className="font-medium text-white truncate text-sm sm:text-base">{selectedFile.name}</p>
                                 <p className="text-xs sm:text-sm text-gray-400">
@@ -595,7 +594,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
                         </div>
                         <button
                             onClick={removeSelectedFile}
-                            className="w-full py-2 sm:py-2 text-sm sm:text-base bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors"
+                            className="w-full py-2 sm:py-2 text-sm sm:text-base bg-red-400 text-white rounded-lg hover:bg-red-500 transition-colors"
                             disabled={isProcessing}
                         >
                             Remover Arquivo
